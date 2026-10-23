@@ -72,27 +72,31 @@ export default function LoginView({ onLogin }) {
                         ? 'bg-blue-50/70 border-blue-200 text-blue-900'
                         : 'bg-amber-50/70 border-amber-200 text-amber-900'
                 }`}>
-                    {activeTab === 'member' ? (
+                    {activeTab === 'member' ? 
+                    (
                         <div>
-                            <p className="font-bold flex items-center gap-1.5">
+                            <p className="font-bold justify-center flex items-center gap-1.5">
                                 <Icon name="info" className="w-3.5 h-3.5 text-blue-600" />
                                 Login Member Kelas
                             </p>
-                            <p className="mt-1 text-[11px] text-blue-800">
+                            {/* <p className="mt-1 text-[11px] text-blue-800">
                                 Gunakan <strong>NIM</strong> Anda untuk Username & Password. 3 digit angka terakhir NIM (contoh: <strong>001, 002, 011</strong>) menentukan profil unik mahasiswa.
-                            </p>
+                            </p> */}
                         </div>
-                    ) : (
+                    ) 
+                    : 
+                    (
                         <div>
-                            <p className="font-bold flex items-center gap-1.5">
+                            <p className="font-bold flex items-center justify-center gap-1.5">
                                 <Icon name="shield-check" className="w-3.5 h-3.5 text-amber-600" />
                                 Login Administrator
                             </p>
-                            <p className="mt-1 text-[11px] text-amber-800">
+                            {/* <p className="mt-1 text-[11px] text-amber-800">
                                 Akses penuh untuk mengelola mata kuliah, materi, tugas, dan pengumuman. (User: <strong>admin</strong> · Pass: <strong>admin123</strong>)
-                            </p>
+                            </p> */}
                         </div>
-                    )}
+                    )
+                    }
                 </div>
 
                 {/* Form Login */}
@@ -113,7 +117,7 @@ export default function LoginView({ onLogin }) {
 
                     <div>
                         <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
-                            {activeTab === 'member' ? 'Password (NIM)' : 'Password Admin'}
+                            {activeTab === 'member' ? 'Password' : 'Password Admin'}
                         </label>
                         <input
                             type="password"
@@ -142,7 +146,7 @@ export default function LoginView({ onLogin }) {
                 </form>
 
                 {/* Tombol Demo Cepat */}
-                <div className="pt-2 border-t border-slate-100 text-center">
+                {/* <div className="pt-2 border-t border-slate-100 text-center">
                     <span className="text-[11px] text-slate-400 block mb-2 font-medium">Uji Coba Akun Demo Cepat:</span>
                     <div className="flex flex-wrap justify-center gap-1.5">
                         <button
@@ -176,7 +180,7 @@ export default function LoginView({ onLogin }) {
                             Admin (admin123)
                         </button>
                     </div>
-                </div>
+                </div> */}
             </div>
         </div>
     );
