@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Icon from './Icons';
 import Modal, { ConfirmDialog, FormField, inputCls, selectCls } from './Modal';
+import { getFileUrl } from '../lib/api';
 
 const FILE_TYPES = ['PDF', 'PPTX', 'DOCX', 'ZIP', 'MP4', 'XLSX'];
 
@@ -71,7 +72,7 @@ export default function MaterialDetailPage({
 
     const handleDownload = () => {
         if (material.file_url) {
-            window.open(material.file_url, '_blank');
+            window.open(getFileUrl(material.file_url), '_blank');
             showToast(`Membuka berkas: ${material.title}`);
         } else {
             showToast(`Mengunduh file: ${material.title} (${material.type})`);

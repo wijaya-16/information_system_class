@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Icon from './Icons';
+import { getFileUrl } from '../lib/api';
 
 // Item navigasi biasa (tanpa dropdown)
 const navItems = [
@@ -149,7 +150,7 @@ export default function Navbar({ activePage, navigateTo, user, onLogout, dbConne
                 {/* Status Database PostgreSQL & Link ke Database Viewer */}
                 <div className="hidden lg:flex items-center">
                     <a
-                        href="/db-view"
+                        href={getFileUrl('/db-view')}
                         target="_blank"
                         rel="noreferrer"
                         title={dbConnected ? "Klik untuk melihat data di PostgreSQL Database Viewer" : "Server backend belum berjalan"}

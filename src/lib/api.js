@@ -1,7 +1,17 @@
 // src/lib/api.js
 // Client API untuk menghubungkan React Frontend ke Backend PostgreSQL
+// Mendukung localhost (development) dan URL Cloud/Vercel (production)
 
-const API_BASE = ''; // Menggunakan relative path yang di-proxy oleh Vite ke http://localhost:5000
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
+// Helper untuk URL berkas/gambar upload
+export function getFileUrl(path) {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
+        return path;
+    }
+    return `${API_BASE}${path}`;
+}
 
 // Helper request umum
 async function request(endpoint, options = {}) {
