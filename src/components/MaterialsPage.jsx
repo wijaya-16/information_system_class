@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Icon from './Icons';
 import Modal, { ConfirmDialog, FormField, inputCls, selectCls } from './Modal';
+import { uploadFile } from '../lib/api';
 
 const FILE_TYPES = ['PDF', 'PPTX', 'DOCX', 'ZIP', 'MP4', 'XLSX'];
 
@@ -24,6 +25,8 @@ export default function MaterialsPage({
     const [modalMode, setModalMode] = useState(null); // 'add' | 'edit'
     const [editItem, setEditItem] = useState(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef(null);
 
     // Form state
     const [form, setForm] = useState({
@@ -34,7 +37,35 @@ export default function MaterialsPage({
         size: '2.5MB',
         date: getTodayDate(),
         description: '',
+        file_url: null,
     });
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploading(true);
+        try {
+            const res = await uploadFile(file);
+            if (res.url) {
+                const ext = file.name.split('.').pop().toUpperCase();
+                const sizeStr = file.size > 1024 * 1024
+                    ? (file.size / (1024 * 1024)).toFixed(1) + 'MB'
+                    : Math.round(file.size / 1024) + 'KB';
+                setForm(f => ({
+                    ...f,
+                    title: f.title || file.name.replace(/\.[^/.]+$/, ''),
+                    type: ext || f.type,
+                    size: sizeStr,
+                    file_url: res.url,
+                }));
+                showToast('Berkas berhasil diunggah ke server!', 'success');
+            }
+        } catch (err) {
+            showToast('Gagal upload berkas: ' + err.message, 'error');
+        } finally {
+            setUploading(false);
+        }
+    };
 
     // Handle course change in form to auto-sync lecturer
     const handleCourseSelect = (courseName) => {
@@ -56,6 +87,7 @@ export default function MaterialsPage({
             size: '2.5MB',
             date: getTodayDate(),
             description: '',
+            file_url: null,
         });
         setEditItem(null);
         setModalMode('add');
@@ -71,6 +103,7 @@ export default function MaterialsPage({
             size: mat.size || '2.0MB',
             date: mat.date || getTodayDate(),
             description: mat.description || '',
+            file_url: mat.file_url || null,
         });
         setEditItem(mat);
         setModalMode('edit');
@@ -255,6 +288,37 @@ export default function MaterialsPage({
                     onClose={() => setModalMode(null)}
                 >
                     <div className="space-y-4">
+                        <FormField label="Berkas Dokumen / Materi (PDF, PPTX, Word, ZIP, dll)">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileUpload}
+                                    className="hidden"
+                                    accept=".pdf,.pptx,.ppt,.docx,.doc,.xlsx,.xls,.zip,.rar,.mp4"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={uploading}
+                                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-xl border border-slate-300 transition inline-flex items-center justify-center gap-2"
+                                >
+                                    <Icon name="upload" className="w-3.5 h-3.5" />
+                                    {uploading ? 'Mengunggah Berkas...' : 'Unggah File dari Komputer'}
+                                </button>
+                                {form.file_url ? (
+                                    <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-medium truncate flex items-center gap-1">
+                                        <Icon name="check" className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                        Berkas tersimpan di server
+                                    </span>
+                                ) : (
+                                    <span className="text-[11px] text-slate-400">
+                                        Opsional (bisa isi judul & info secara manual)
+                                    </span>
+                                )}
+                            </div>
+                        </FormField>
+
                         <FormField label="Judul Materi" required>
                             <input
                                 className={inputCls}

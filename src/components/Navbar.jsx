@@ -146,6 +146,25 @@ export default function Navbar({ activePage, navigateTo, user, onLogout, dbConne
                     ))}
                 </nav>
 
+                {/* Status Database PostgreSQL & Link ke Database Viewer */}
+                <div className="hidden lg:flex items-center">
+                    <a
+                        href="/db-view"
+                        target="_blank"
+                        rel="noreferrer"
+                        title={dbConnected ? "Klik untuk melihat data di PostgreSQL Database Viewer" : "Server backend belum berjalan"}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition shadow-sm ${
+                            dbConnected
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                                : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                        }`}
+                    >
+                        <span className={`w-2 h-2 rounded-full ${dbConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+                        <span>{dbConnected ? 'PostgreSQL Aktif' : 'Server Offline'}</span>
+                        <Icon name="external-link" className="w-3 h-3 opacity-60" />
+                    </a>
+                </div>
+
                 {/* User info + Logout — Desktop */}
                 <div className="hidden md:flex items-center gap-2.5 pl-3 border-l border-slate-200">
                         <div

@@ -70,7 +70,12 @@ export default function MaterialDetailPage({
     };
 
     const handleDownload = () => {
-        showToast(`Mengunduh file: ${material.title} (${material.type})`);
+        if (material.file_url) {
+            window.open(material.file_url, '_blank');
+            showToast(`Membuka berkas: ${material.title}`);
+        } else {
+            showToast(`Mengunduh file: ${material.title} (${material.type})`);
+        }
     };
 
     return (
