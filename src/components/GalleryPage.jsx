@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Icon from './Icons';
 import Modal, { ConfirmDialog, FormField, inputCls, selectCls } from './Modal';
+import { uploadImage } from '../lib/storage';
 
 const CATEGORIES = [
     'Semua',
@@ -41,6 +42,7 @@ export default function GalleryPage({
     });
 
     const fileInputRef = useRef(null);
+    const [uploadProgress, setUploadProgress] = useState(null); // null | 0-100
 
     // Filter foto berdasarkan kategori dan pencarian
     const filteredPhotos = photos.filter(item => {
@@ -87,8 +89,8 @@ export default function GalleryPage({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [selectedPhoto, filteredPhotos]);
 
-    // Handle Upload file lokal
-    const handleFileUpload = (e) => {
+    // Handle Upload file lokal (dengan Firebase Storage jika tersedia)
+    const handleFileUpload = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -97,16 +99,30 @@ export default function GalleryPage({
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const base64Url = event.target?.result;
+        setUploadProgress(0);
+        try {
+            // uploadImage otomatis pakai Firebase Storage jika dikonfigurasi,
+            // fallback ke base64 jika belum
+            const { url, storagePath } = await uploadImage(
+                file,
+                'gallery',
+                (progress) => setUploadProgress(progress)
+            );
             setForm(f => ({
                 ...f,
-                url: base64Url,
+                url,
+                storagePath: storagePath || null,
                 title: f.title || file.name.replace(/\.[^/.]+$/, ''),
             }));
-        };
-        reader.readAsDataURL(file);
+            if (showToast && storagePath) {
+                showToast('Foto berhasil diunggah ke cloud!');
+            }
+        } catch (err) {
+            console.error('Upload error:', err);
+            if (showToast) showToast('Gagal mengunggah foto. Coba lagi.', 'error');
+        } finally {
+            setUploadProgress(null);
+        }
     };
 
     // Admin: Buka Modal Tambah
@@ -532,6 +548,22 @@ export default function GalleryPage({
                                     >
                                         <Icon name="x" className="w-3 h-3" /> Hapus file lokal & gunakan URL
                                     </button>
+                                )}
+
+                                {/* Progress Bar Upload ke Firebase Storage */}
+                                {uploadProgress !== null && (
+                                    <div className="mt-2 space-y-1">
+                                        <div className="flex justify-between text-xs text-slate-500">
+                                            <span>Mengunggah ke cloud...</span>
+                                            <span>{uploadProgress}%</span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                            <div
+                                                className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                                                style={{ width: `${uploadProgress}%` }}
+                                            />
+                                        </div>
+                                    </div>
                                 )}
                             </div>
 

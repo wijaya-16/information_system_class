@@ -30,12 +30,16 @@ export default function ProfilePage({ user, onLogout, navigateTo }) {
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                     {/* Avatar */}
                     <div className="relative">
-                        <div className={`w-24 h-24 rounded-2xl flex items-center justify-center text-3xl font-extrabold shadow-md ${
+                        <div className={`w-24 h-24 rounded-2xl flex items-center justify-center text-3xl font-extrabold shadow-md overflow-hidden ${
                             isAdmin
                                 ? 'bg-slate-900 text-white'
                                 : 'bg-gradient-to-tr from-blue-600 to-indigo-600 text-white'
                         }`}>
-                            {user.fullname ? user.fullname.charAt(0).toUpperCase() : 'U'}
+                            {user.photo ? (
+                                <img src={user.photo} alt={user.fullname} className="w-full h-full object-cover" />
+                            ) : (
+                                user.fullname ? user.fullname.charAt(0).toUpperCase() : 'U'
+                            )}
                         </div>
                         <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-white ${
                             isAdmin ? 'bg-amber-500' : 'bg-emerald-500'

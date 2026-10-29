@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Icon from './Icons';
 import Modal, { ConfirmDialog, FormField, inputCls, selectCls } from './Modal';
 
@@ -19,11 +19,57 @@ export default function MembersPage({
     const [editTarget, setEditTarget] = useState(null);
     const [confirmDeleteCode, setConfirmDeleteCode] = useState(null);
 
+    const fileInputRef = useRef(null);
+    const detailFileInputRef = useRef(null);
+
     const [form, setForm] = useState({
         code: '',
         fullname: '',
         gender: 'L',
+        photo: '',
     });
+
+    // Helper kompresi gambar otomatis (Canvas)
+    const handleFileChange = (e, callback) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            if (showToast) showToast('Silakan pilih file gambar (JPG, PNG, WebP)', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_DIM = 800; // Ukuran optimal untuk foto profil
+                let w = img.width;
+                let h = img.height;
+                if (w > h) {
+                    if (w > MAX_DIM) {
+                        h = Math.round((h * MAX_DIM) / w);
+                        w = MAX_DIM;
+                    }
+                } else {
+                    if (h > MAX_DIM) {
+                        w = Math.round((w * MAX_DIM) / h);
+                        h = MAX_DIM;
+                    }
+                }
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const compressedUrl = canvas.toDataURL('image/jpeg', 0.85);
+                callback(compressedUrl);
+            };
+            img.onerror = () => callback(event.target?.result);
+            img.src = event.target?.result;
+        };
+        reader.readAsDataURL(file);
+    };
 
     // Generate next 3-digit code recommendation
     const getNextCode = () => {
@@ -37,6 +83,7 @@ export default function MembersPage({
             code: getNextCode(),
             fullname: '',
             gender: 'L',
+            photo: '',
         });
         setEditTarget(null);
         setModalMode('add');
@@ -48,6 +95,7 @@ export default function MembersPage({
             code: code,
             fullname: member.fullname,
             gender: member.gender || 'L',
+            photo: member.photo || member.avatar || '',
         });
         setEditTarget({ code, ...member });
         setModalMode('edit');
@@ -66,20 +114,20 @@ export default function MembersPage({
             return;
         }
 
+        const payload = {
+            fullname: trimmedName,
+            gender: form.gender,
+            photo: form.photo || null,
+        };
+
         if (modalMode === 'add') {
             if (members[trimmedCode]) {
                 if (showToast) showToast(`NIM 25SI${trimmedCode} sudah terdaftar`, 'error');
                 return;
             }
-            adminHandlers.member.add(trimmedCode, {
-                fullname: trimmedName,
-                gender: form.gender,
-            });
+            adminHandlers.member.add(trimmedCode, payload);
         } else if (modalMode === 'edit' && editTarget) {
-            adminHandlers.member.update(editTarget.code, trimmedCode, {
-                fullname: trimmedName,
-                gender: form.gender,
-            });
+            adminHandlers.member.update(editTarget.code, trimmedCode, payload);
         }
         setModalMode(null);
     };
@@ -88,6 +136,35 @@ export default function MembersPage({
         if (!confirmDeleteCode) return;
         adminHandlers.member.delete(confirmDeleteCode);
         setConfirmDeleteCode(null);
+        if (selectedMember?.code === confirmDeleteCode) {
+            setSelectedMember(null);
+        }
+    };
+
+    // Upload / ubah foto profil dari Modal Detail
+    const handleDetailPhotoUpload = (e) => {
+        if (!selectedMember) return;
+        handleFileChange(e, (compressedUrl) => {
+            adminHandlers.member.update(selectedMember.code, selectedMember.code, {
+                fullname: selectedMember.fullname,
+                gender: selectedMember.gender,
+                photo: compressedUrl,
+            });
+            setSelectedMember(prev => ({ ...prev, photo: compressedUrl }));
+            if (showToast) showToast(`Foto profil ${selectedMember.fullname} berhasil diperbarui!`);
+        });
+    };
+
+    // Hapus foto profil dari Modal Detail
+    const handleDetailPhotoDelete = () => {
+        if (!selectedMember) return;
+        adminHandlers.member.update(selectedMember.code, selectedMember.code, {
+            fullname: selectedMember.fullname,
+            gender: selectedMember.gender,
+            photo: null,
+        });
+        setSelectedMember(prev => ({ ...prev, photo: null }));
+        if (showToast) showToast(`Foto profil ${selectedMember.fullname} telah dihapus`);
     };
 
     // Convert object to array for filtering and rendering
@@ -96,6 +173,7 @@ export default function MembersPage({
         nim: `25SI${code}`,
         fullname: data.fullname,
         gender: data.gender || 'L',
+        photo: data.photo || data.avatar || null,
     }));
 
     // Filter
@@ -115,6 +193,15 @@ export default function MembersPage({
 
     return (
         <div className="space-y-6">
+            {/* Input file tersembunyi untuk upload langsung dari modal detail */}
+            <input
+                type="file"
+                ref={detailFileInputRef}
+                accept="image/*"
+                onChange={handleDetailPhotoUpload}
+                className="hidden"
+            />
+
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -222,7 +309,7 @@ export default function MembersPage({
                                                     </button>
                                                     <button
                                                         onClick={(e) => {
-                                                            e.stopPropagation();
+                                                             e.stopPropagation();
                                                             setConfirmDeleteCode(member.code);
                                                         }}
                                                         className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
@@ -237,13 +324,23 @@ export default function MembersPage({
 
                                     {/* Avatar & Nama */}
                                     <div className="flex items-center gap-3 mt-1">
-                                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold shadow-sm shrink-0 ${
-                                            member.gender === 'P'
-                                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                                                : 'bg-blue-50 text-blue-700 border border-blue-200'
-                                        }`}>
-                                            {member.fullname.charAt(0)}
-                                        </div>
+                                        {member.photo ? (
+                                            <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-slate-200 shadow-sm">
+                                                <img
+                                                    src={member.photo}
+                                                    alt={member.fullname}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold shadow-sm shrink-0 ${
+                                                member.gender === 'P'
+                                                    ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                                    : 'bg-blue-50 text-blue-700 border border-blue-200'
+                                            }`}>
+                                                {member.fullname.charAt(0)}
+                                            </div>
+                                        )}
                                         <div className="min-w-0">
                                             <h3 className="font-bold text-slate-900 text-sm group-hover:text-blue-600 transition truncate leading-snug">
                                                 {member.fullname}
@@ -274,21 +371,75 @@ export default function MembersPage({
                 <Modal title="Informasi Mahasiswa" onClose={() => setSelectedMember(null)}>
                     <div className="space-y-5">
                         <div className="flex items-center gap-4">
-                            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-md ${
-                                selectedMember.gender === 'P'
-                                    ? 'bg-gradient-to-tr from-rose-500 to-pink-500 text-white'
-                                    : 'bg-gradient-to-tr from-blue-600 to-indigo-600 text-white'
-                            }`}>
-                                {selectedMember.fullname.charAt(0)}
+                            <div className="relative shrink-0">
+                                {selectedMember.photo ? (
+                                    <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-md border-2 border-white ring-2 ring-slate-100">
+                                        <img
+                                            src={selectedMember.photo}
+                                            alt={selectedMember.fullname}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className={`w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-bold shadow-md ${
+                                        selectedMember.gender === 'P'
+                                            ? 'bg-gradient-to-tr from-rose-500 to-pink-500 text-white'
+                                            : 'bg-gradient-to-tr from-blue-600 to-indigo-600 text-white'
+                                    }`}>
+                                        {selectedMember.fullname.charAt(0)}
+                                    </div>
+                                )}
+
+                                {/* Tombol ganti foto langsung jika admin atau akun milik sendiri */}
+                                {(isAdmin || currentUser?.nim === selectedMember.nim) && (
+                                    <button
+                                        type="button"
+                                        onClick={() => detailFileInputRef.current?.click()}
+                                        className="absolute -bottom-1 -right-1 p-2 rounded-full bg-slate-900 hover:bg-blue-600 text-white shadow-lg transition"
+                                        title="Ubah Foto Profil"
+                                    >
+                                        <Icon name="camera" className="w-3.5 h-3.5" />
+                                    </button>
+                                )}
                             </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-slate-900">{selectedMember.fullname}</h3>
+
+                            <div className="min-w-0 flex-1">
+                                <h3 className="text-lg font-bold text-slate-900 truncate">{selectedMember.fullname}</h3>
                                 <p className="text-xs text-slate-500 font-mono mt-0.5">NIM: {selectedMember.nim}</p>
-                                <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-semibold border border-slate-200">
-                                    {selectedMember.gender === 'P' ? 'Perempuan' : 'Laki-laki'} · Kode Unik #{selectedMember.code}
-                                </span>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                    <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-semibold border border-slate-200">
+                                        {selectedMember.gender === 'P' ? 'Perempuan' : 'Laki-laki'} · Kode #{selectedMember.code}
+                                    </span>
+                                    {selectedMember.photo && (isAdmin || currentUser?.nim === selectedMember.nim) && (
+                                        <button
+                                            type="button"
+                                            onClick={handleDetailPhotoDelete}
+                                            className="text-[10px] text-red-600 hover:underline inline-flex items-center gap-0.5 ml-1"
+                                        >
+                                            <Icon name="trash-2" className="w-3 h-3" /> Hapus Foto
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
+
+                        {/* Opsi Ubah Foto Profil untuk Member / Admin */}
+                        {(isAdmin || currentUser?.nim === selectedMember.nim) && (
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                                <div className="text-xs">
+                                    <span className="font-bold text-slate-800 block">Foto Profil Mahasiswa</span>
+                                    <span className="text-[11px] text-slate-500">Upload dari HP atau komputer (otomatis dikompres)</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => detailFileInputRef.current?.click()}
+                                    className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-sm shrink-0"
+                                >
+                                    <Icon name="upload" className="w-3.5 h-3.5" />
+                                    {selectedMember.photo ? 'Ganti Foto' : 'Unggah Foto'}
+                                </button>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 text-xs">
                             <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
@@ -338,6 +489,55 @@ export default function MembersPage({
                     onClose={() => setModalMode(null)}
                 >
                     <div className="space-y-4">
+                        {/* Foto Profil Mahasiswa */}
+                        <FormField label="Foto Profil Mahasiswa (Opsional)">
+                            <div className="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                                <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-inner">
+                                    {form.photo ? (
+                                        <img src={form.photo} alt="Preview" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Icon name="user" className="w-7 h-7 text-slate-300" />
+                                    )}
+                                </div>
+                                <div className="flex-1 space-y-2">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            accept="image/*"
+                                            onChange={(e) => handleFileChange(e, (url) => setForm(f => ({ ...f, photo: url })))}
+                                            className="hidden"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 transition flex items-center gap-1.5 shadow-sm"
+                                        >
+                                            <Icon name="upload" className="w-3.5 h-3.5 text-blue-600" />
+                                            Pilih Foto Dari HP/Komputer
+                                        </button>
+                                        {form.photo && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setForm(f => ({ ...f, photo: '' }))}
+                                                className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-lg transition border border-red-200 flex items-center gap-1"
+                                            >
+                                                <Icon name="trash-2" className="w-3.5 h-3.5" /> Hapus
+                                            </button>
+                                        )}
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Atau tempel link URL foto (https://...)"
+                                        value={form.photo.startsWith('data:') ? '(Foto lokal berhasil diunggah & dikompres)' : form.photo}
+                                        onChange={e => setForm(f => ({ ...f, photo: e.target.value }))}
+                                        disabled={form.photo.startsWith('data:')}
+                                        className="w-full text-xs px-3 py-1.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900"
+                                    />
+                                </div>
+                            </div>
+                        </FormField>
+
                         <div className="grid grid-cols-2 gap-3">
                             <FormField label="3 Digit Kode NIM" required>
                                 <div className="flex items-center">

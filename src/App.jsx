@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Navbar from './components/Navbar';
 import BottomNavigation from './components/BottomNavigation';
 import LoginView from './components/LoginView';
@@ -14,6 +14,9 @@ import MembersPage from './components/MembersPage';
 import Footer from './components/Footer';
 import Toast from './components/Toast';
 import { CLASS_MEMBERS, getMemberByNim } from './data/classMembers';
+
+// ─── PostgreSQL Database API Layer ───────────────────────────────────────────
+import { api, fetchAllData, checkServerHealth } from './lib/api';
 
 const STORAGE_KEY = 'si_database_v2';
 
@@ -77,7 +80,7 @@ export default function App() {
     const [token, setToken] = useState(() => localStorage.getItem('si_token') || '');
     const [user, setUser] = useState(() => {
         const savedToken = localStorage.getItem('si_token');
-        const savedUser = localStorage.getItem('si_user');
+        const savedUser  = localStorage.getItem('si_user');
         if (savedToken && savedUser) {
             try { return JSON.parse(savedUser); } catch (e) {}
         }
@@ -86,9 +89,18 @@ export default function App() {
 
     const [activePage, setActivePage] = useState('beranda');
     const [pageParams, setPageParams] = useState({});
-    const [toast, setToast] = useState(null);
+    const [toast, setToast]           = useState(null);
 
-    // ─── Database dengan LocalStorage & Multi-Tab Synchronization ─────────────────
+    // ─── Helpers ──────────────────────────────────────────────────────────────────
+    const showToast = useCallback((message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 4000);
+    }, []);
+
+    const nextId = () => Date.now();
+
+    // ─── State Database ──────────────────────────────────────────────────────────
+    const [dbConnected, setDbConnected] = useState(false);
     const [data, setData] = useState(() => {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
@@ -97,72 +109,100 @@ export default function App() {
                 return {
                     ...INITIAL_DATABASE,
                     ...parsed,
-                    // Selalu sinkronkan dengan perubahan terbaru di classMembers.js
-                    members: {
-                        ...CLASS_MEMBERS,
-                        ...(parsed.members || {}),
-                    },
+                    members: { ...CLASS_MEMBERS, ...(parsed.members || {}) },
                 };
-            } catch (e) {
-                console.error('Gagal membaca data dari localStorage', e);
-            }
+            } catch (e) {}
         }
         return INITIAL_DATABASE;
     });
 
-    // Simpan otomatis ke localStorage saat data berubah
+    // ─── Sinkronisasi Data dengan PostgreSQL Backend ─────────────────────────────
+    const loadFromDatabase = useCallback(async (showNotice = false) => {
+        try {
+            const health = await checkServerHealth();
+            if (health.status === 'ok') {
+                setDbConnected(true);
+                const cloudData = await fetchAllData();
+                if (cloudData && cloudData.courses) {
+                    setData(prev => ({
+                        ...prev,
+                        ...cloudData,
+                        members: { ...CLASS_MEMBERS, ...(cloudData.members || {}) },
+                    }));
+                    if (showNotice) {
+                        showToast('Berhasil terhubung ke database PostgreSQL!', 'success');
+                    }
+                    return;
+                }
+            } else {
+                setDbConnected(false);
+            }
+        } catch (err) {
+            setDbConnected(false);
+        }
+    }, [showToast]);
+
+    useEffect(() => {
+        loadFromDatabase(true);
+
+        // Polling setiap 8 detik agar data otomatis sinkron jika ada admin/member di device lain yang menginput
+        const interval = setInterval(() => {
+            loadFromDatabase(false);
+        }, 8000);
+        return () => clearInterval(interval);
+    }, [loadFromDatabase]);
+
+    // Simpan cadangan ke localStorage
     useEffect(() => {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        } catch (e) {
-            console.error('Gagal menyimpan data ke localStorage', e);
-        }
+        } catch (e) {}
     }, [data]);
 
-    // Sinkronisasi otomatis saat ada tab browser lain yang mengubah data
+    // Multi-tab sync di browser yang sama
     useEffect(() => {
         const handleStorageChange = (e) => {
             if (e.key === STORAGE_KEY && e.newValue) {
                 try {
-                    const updated = JSON.parse(e.newValue);
-                    setData(updated);
-                    setToast({ message: 'Informasi kelas baru saja diperbarui oleh Administrator!', type: 'success' });
-                    setTimeout(() => setToast(null), 4000);
+                    setData(JSON.parse(e.newValue));
+                    showToast('Data kelas baru saja diperbarui!', 'success');
                 } catch (err) {}
             }
         };
         window.addEventListener('storage', handleStorageChange);
         return () => window.removeEventListener('storage', handleStorageChange);
-    }, []);
-
-    // ─── Helpers ──────────────────────────────────────────────────────────────────
-    const showToast = (message, type = 'success') => {
-        setToast({ message, type });
-        setTimeout(() => setToast(null), 4000);
-    };
-
-    const nextId = () => Date.now();
+    }, [showToast]);
 
     // ─── CRUD: Mata Kuliah ────────────────────────────────────────────────────────
-    const addCourse = (courseData) => {
-        setData(d => ({ ...d, courses: [...d.courses, { ...courseData, id: nextId() }] }));
+    const addCourse = async (courseData) => {
+        const newItem = { ...courseData, id: nextId() };
+        setData(d => ({ ...d, courses: [...(d.courses || []), newItem] }));
+        try {
+            await api.courses.add(newItem);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, tersimpan secara lokal:', err.message);
+        }
         showToast('Mata kuliah berhasil ditambahkan');
     };
 
-    const updateCourse = (id, courseData) => {
+    const updateCourse = async (id, courseData) => {
         const oldName = data.courses.find(c => c.id === id)?.name;
         setData(d => ({
             ...d,
-            courses: d.courses.map(c => c.id === id ? { ...c, ...courseData } : c),
-            // Update nama di data terkait jika nama berubah
+            courses:       d.courses.map(c => c.id === id ? { ...c, ...courseData } : c),
             materials:     oldName && courseData.name !== oldName ? d.materials.map(m => m.course === oldName ? { ...m, course: courseData.name } : m) : d.materials,
             assignments:   oldName && courseData.name !== oldName ? d.assignments.map(a => a.course === oldName ? { ...a, course: courseData.name } : a) : d.assignments,
             announcements: oldName && courseData.name !== oldName ? d.announcements.map(a => a.course === oldName ? { ...a, course: courseData.name } : a) : d.announcements,
         }));
+        try {
+            await api.courses.update(id, courseData);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, tersimpan secara lokal:', err.message);
+        }
         showToast('Mata kuliah berhasil diperbarui');
     };
 
-    const deleteCourse = (id) => {
+    const deleteCourse = async (id) => {
         const courseName = data.courses.find(c => c.id === id)?.name;
         setData(d => ({
             ...d,
@@ -171,137 +211,223 @@ export default function App() {
             assignments:   d.assignments.filter(a => a.course !== courseName),
             announcements: d.announcements.filter(a => a.course !== courseName),
         }));
+        try {
+            await api.courses.delete(id);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, tersimpan secara lokal:', err.message);
+        }
         showToast('Mata kuliah beserta kontennya telah dihapus', 'error');
     };
 
     // ─── CRUD: Materi ────────────────────────────────────────────────────────────
-    const addMaterial = (mat) => {
-        setData(d => ({ ...d, materials: [...d.materials, { ...mat, id: nextId() }] }));
+    const addMaterial = async (mat) => {
+        const newItem = { ...mat, id: nextId() };
+        setData(d => ({ ...d, materials: [...(d.materials || []), newItem] }));
+        try {
+            await api.materials.add(newItem);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, tersimpan secara lokal:', err.message);
+        }
         showToast('Materi berhasil ditambahkan');
     };
 
-    const updateMaterial = (id, mat) => {
+    const updateMaterial = async (id, mat) => {
         setData(d => ({ ...d, materials: d.materials.map(m => m.id === id ? { ...m, ...mat } : m) }));
+        try {
+            await api.materials.update(id, mat);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast('Materi berhasil diperbarui');
     };
 
-    const deleteMaterial = (id) => {
+    const deleteMaterial = async (id) => {
         setData(d => ({ ...d, materials: d.materials.filter(m => m.id !== id) }));
+        try {
+            await api.materials.delete(id);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast('Materi berhasil dihapus', 'error');
     };
 
     // ─── CRUD: Tugas ─────────────────────────────────────────────────────────────
-    const addAssignment = (a) => {
-        setData(d => ({ ...d, assignments: [...d.assignments, { ...a, id: nextId() }] }));
+    const addAssignment = async (a) => {
+        const newItem = { ...a, id: nextId() };
+        setData(d => ({ ...d, assignments: [...(d.assignments || []), newItem] }));
+        try {
+            await api.assignments.add(newItem);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast('Tugas berhasil ditambahkan');
     };
 
-    const updateAssignment = (id, a) => {
+    const updateAssignment = async (id, a) => {
         setData(d => ({ ...d, assignments: d.assignments.map(x => x.id === id ? { ...x, ...a } : x) }));
+        try {
+            await api.assignments.update(id, a);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast('Tugas berhasil diperbarui');
     };
 
-    const deleteAssignment = (id) => {
+    const deleteAssignment = async (id) => {
         setData(d => ({ ...d, assignments: d.assignments.filter(x => x.id !== id) }));
+        try {
+            await api.assignments.delete(id);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast('Tugas berhasil dihapus', 'error');
     };
 
     // ─── CRUD: Pengumuman ────────────────────────────────────────────────────────
-    const addAnnouncement = (a) => {
-        setData(d => ({ ...d, announcements: [...d.announcements, { ...a, id: nextId() }] }));
+    const addAnnouncement = async (a) => {
+        const newItem = { ...a, id: nextId() };
+        setData(d => ({ ...d, announcements: [...(d.announcements || []), newItem] }));
+        try {
+            await api.announcements.add(newItem);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast('Pengumuman berhasil ditambahkan');
     };
 
-    const updateAnnouncement = (id, a) => {
+    const updateAnnouncement = async (id, a) => {
         setData(d => ({ ...d, announcements: d.announcements.map(x => x.id === id ? { ...x, ...a } : x) }));
+        try {
+            await api.announcements.update(id, a);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast('Pengumuman berhasil diperbarui');
     };
 
-    const deleteAnnouncement = (id) => {
+    const deleteAnnouncement = async (id) => {
         setData(d => ({ ...d, announcements: d.announcements.filter(x => x.id !== id) }));
+        try {
+            await api.announcements.delete(id);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast('Pengumuman berhasil dihapus', 'error');
     };
 
     // ─── CRUD: Foto Kelas ─────────────────────────────────────────────────────────
-    const addClassPhoto = (photoData) => {
+    const addClassPhoto = async (photoData) => {
         const newPhoto = { ...photoData, id: nextId() };
         setData(d => {
-            const photos = d.classPhotos || [];
-            const updated = photoData.isHero
-                ? photos.map(p => ({ ...p, isHero: false }))
-                : photos;
+            const photos  = d.classPhotos || [];
+            const updated = photoData.isHero ? photos.map(p => ({ ...p, isHero: false })) : photos;
             return { ...d, classPhotos: [newPhoto, ...updated] };
         });
+        try {
+            await api.photos.add(newPhoto);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast('Foto kelas berhasil ditambahkan');
     };
 
-    const updateClassPhoto = (id, photoData) => {
+    const updateClassPhoto = async (id, photoData) => {
         setData(d => ({
             ...d,
             classPhotos: (d.classPhotos || []).map(p => {
-                if (p.id === id) {
-                    return { ...p, ...photoData };
-                }
-                if (photoData.isHero) {
-                    return { ...p, isHero: false };
-                }
+                if (p.id === id) return { ...p, ...photoData };
+                if (photoData.isHero) return { ...p, isHero: false };
                 return p;
             }),
         }));
+        try {
+            await api.photos.update(id, photoData);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast('Foto kelas berhasil diperbarui');
     };
 
-    const deleteClassPhoto = (id) => {
-        setData(d => ({
-            ...d,
-            classPhotos: (d.classPhotos || []).filter(p => p.id !== id),
-        }));
+    const deleteClassPhoto = async (id) => {
+        setData(d => ({ ...d, classPhotos: (d.classPhotos || []).filter(p => p.id !== id) }));
+        try {
+            await api.photos.delete(id);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast('Foto kelas berhasil dihapus', 'error');
     };
 
-    const setHeroClassPhoto = (id) => {
+    const setHeroClassPhoto = async (id) => {
         setData(d => ({
             ...d,
-            classPhotos: (d.classPhotos || []).map(p => ({
-                ...p,
-                isHero: p.id === id,
-            })),
+            classPhotos: (d.classPhotos || []).map(p => ({ ...p, isHero: p.id === id })),
         }));
+        try {
+            await api.photos.setHero(id);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast('Foto utama kelas berhasil diatur');
     };
 
     // ─── CRUD: Mahasiswa / Member ─────────────────────────────────────────────────
-    const addMember = (code, memberData) => {
-        setData(d => ({
-            ...d,
-            members: { ...(d.members || CLASS_MEMBERS), [code]: memberData }
-        }));
+    const addMember = async (code, memberData) => {
+        setData(d => ({ ...d, members: { ...(d.members || CLASS_MEMBERS), [code]: memberData } }));
+        try {
+            await api.members.add(code, memberData);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast(`Mahasiswa 25SI${code} berhasil ditambahkan`);
     };
 
-    const updateMember = (oldCode, newCode, memberData) => {
+    const updateMember = async (oldCode, newCode, memberData) => {
         setData(d => {
             const updated = { ...(d.members || CLASS_MEMBERS) };
-            if (oldCode !== newCode) {
-                delete updated[oldCode];
-            }
+            if (oldCode !== newCode) delete updated[oldCode];
             updated[newCode] = memberData;
             return { ...d, members: updated };
         });
+
+        // Jika member yang diedit adalah user yang sedang login, sinkronkan sesi user
+        if (user && (user.code === oldCode || user.nim === `25SI${oldCode}`)) {
+            const updatedUser = {
+                ...user,
+                code: newCode,
+                nim: `25SI${newCode}`,
+                fullname: memberData.fullname || user.fullname,
+                gender: memberData.gender || user.gender,
+                photo: memberData.photo !== undefined ? memberData.photo : user.photo,
+            };
+            setUser(updatedUser);
+            localStorage.setItem('si_user', JSON.stringify(updatedUser));
+        }
+
+        try {
+            await api.members.update(oldCode, newCode, memberData);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast('Data mahasiswa berhasil diperbarui');
     };
 
-    const deleteMember = (code) => {
+    const deleteMember = async (code) => {
         setData(d => {
             const updated = { ...(d.members || CLASS_MEMBERS) };
             delete updated[code];
             return { ...d, members: updated };
         });
+        try {
+            await api.members.delete(code);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast(`Mahasiswa 25SI${code} berhasil dihapus`, 'error');
     };
 
     // ─── Pengumpulan Tugas ────────────────────────────────────────────────────────
-    const submitAssignment = (assignmentId, subData) => {
+    const submitAssignment = async (assignmentId, subData) => {
         const studentNim = user?.nim || user?.username || '25SI001';
         const newSub = {
             id: nextId(),
@@ -318,6 +444,11 @@ export default function App() {
                 newSub,
             ],
         }));
+        try {
+            await api.submissions.add(newSub);
+        } catch (err) {
+            console.warn('[PostgreSQL] Server offline, disimpan secara lokal:', err.message);
+        }
         showToast('Tugas berhasil dikumpulkan!');
     };
 
@@ -350,7 +481,7 @@ export default function App() {
         // 2. Cek Login Member Kelas (NIM)
         // Username dan password sama-sama menggunakan NIM (contoh: 25SI001)
         if (u.toUpperCase() === p.toUpperCase()) {
-            const member = getMemberByNim(u, data.members);
+            const member = getMemberByNim(u, data.members || members);
             if (member) {
                 setUser(member);
                 setToken(`mock-token-${member.code}`);
@@ -463,7 +594,7 @@ export default function App() {
                         adminHandlers={adminHandlers}
                         showToast={showToast}
                         currentUser={user}
-                        submissions={data.submissions || []}
+                        submissions={data.submissions}
                         onSubmitAssignment={submitAssignment}
                     />
                 )}
@@ -479,7 +610,7 @@ export default function App() {
                 )}
                 {activePage === 'mahasiswa' && (
                     <MembersPage
-                        members={data.members || CLASS_MEMBERS}
+                        members={data.members}
                         currentUser={user}
                         isAdmin={isAdmin}
                         adminHandlers={adminHandlers}

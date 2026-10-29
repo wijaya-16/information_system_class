@@ -24,7 +24,7 @@ const matkulDropdown = {
 // Halaman yang dianggap "aktif" untuk grup Mata Kuliah
 const matkulGroup = ['matkul', 'matkul-detail', 'tugas', 'pengumuman'];
 
-export default function Navbar({ activePage, navigateTo, user, onLogout }) {
+export default function Navbar({ activePage, navigateTo, user, onLogout, dbConnected = false }) {
     const [mobileMenuOpen, setMobileMenuOpen]   = useState(false);
     const [dropdownOpen,   setDropdownOpen]     = useState(false);
     const [mobileMatkulOpen, setMobileMatkulOpen] = useState(false);
@@ -153,12 +153,16 @@ export default function Navbar({ activePage, navigateTo, user, onLogout }) {
                             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition"
                             title="Buka Profil Akun"
                         >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm ${
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm overflow-hidden shrink-0 ${
                                 user.role === 'admin'
                                     ? 'bg-slate-900 text-white'
                                     : 'bg-gradient-to-tr from-blue-600 to-indigo-600 text-white'
                             }`}>
-                                {user.fullname.charAt(0)}
+                                {user.photo ? (
+                                    <img src={user.photo} alt={user.fullname} className="w-full h-full object-cover" />
+                                ) : (
+                                    user.fullname.charAt(0)
+                                )}
                             </div>
                             <div className="text-left">
                                 <p className="text-xs font-semibold text-slate-900 leading-tight">{user.fullname}</p>

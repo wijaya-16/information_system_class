@@ -52,7 +52,7 @@ export default function HomePage({
 
     const fileInputRef = useRef(null);
 
-    // Handle Upload file lokal dari komputer/HP
+    // Handle Upload file lokal dari komputer/HP dengan kompresi otomatis
     const handleFileUpload = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -65,12 +65,47 @@ export default function HomePage({
 
         const reader = new FileReader();
         reader.onload = (event) => {
-            const base64Url = event.target?.result;
-            setPhotoForm(f => ({
-                ...f,
-                url: base64Url,
-                title: f.title || file.name.replace(/\.[^/.]+$/, ''), // Default judul dari nama file jika kosong
-            }));
+            const img = new Image();
+            img.onload = () => {
+                // Kompres dan resize otomatis agar pas di memori penyimpanan
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1280;
+                const MAX_HEIGHT = 1280;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width = Math.round((width * MAX_HEIGHT) / height);
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const compressedUrl = canvas.toDataURL('image/jpeg', 0.82);
+                setPhotoForm(f => ({
+                    ...f,
+                    url: compressedUrl,
+                    title: f.title || file.name.replace(/\.[^/.]+$/, ''),
+                }));
+            };
+            img.onerror = () => {
+                setPhotoForm(f => ({
+                    ...f,
+                    url: event.target?.result,
+                    title: f.title || file.name.replace(/\.[^/.]+$/, ''),
+                }));
+            };
+            img.src = event.target?.result;
         };
         reader.readAsDataURL(file);
     };
@@ -414,7 +449,7 @@ export default function HomePage({
                         </button>
                     </div>
                     <div className="space-y-4 flex-1">
-                        {data.announcements.slice(0, 3).map(item => (
+                        {(data.announcements || []).slice(0, 3).map(item => (
                             <div key={item.id} className="p-4 rounded-xl border border-slate-100 hover:bg-slate-50 transition">
                                 <div className="flex items-center justify-between mb-1">
                                     <div className="flex items-center gap-2">
@@ -439,7 +474,7 @@ export default function HomePage({
                 <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                     <h2 className="text-lg font-bold text-slate-900 mb-4">Agenda Kegiatan</h2>
                     <div className="space-y-3">
-                        {data.events.map((ev, idx) => (
+                        {(data.events || []).map((ev, idx) => (
                             <div key={idx} className="flex gap-3 items-start pb-3 border-b border-slate-100 last:border-0">
                                 <div className="w-12 text-center bg-slate-100 rounded-lg py-2 shrink-0">
                                     <span className="block text-xs font-bold text-slate-800">{ev.date.split('-')[2]}</span>
@@ -464,7 +499,7 @@ export default function HomePage({
                     </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {data.materials.slice(0, 4).map(mat => (
+                    {(data.materials || []).slice(0, 4).map(mat => (
                         <div
                             key={mat.id}
                             onClick={() => navigateTo('materi-detail', { id: mat.id })}
