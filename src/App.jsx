@@ -15,7 +15,7 @@ import Footer from './components/Footer';
 import Toast from './components/Toast';
 import { CLASS_MEMBERS, getMemberByNim } from './data/classMembers';
 
-// ─── PostgreSQL Database API Layer ───────────────────────────────────────────
+// ─── Supabase Cloud Database API Layer ───────────────────────────────────────
 import { api, fetchAllData, checkServerHealth } from './lib/api';
 
 const STORAGE_KEY = 'si_database_v2';
@@ -130,7 +130,7 @@ export default function App() {
                         members: { ...CLASS_MEMBERS, ...(cloudData.members || {}) },
                     }));
                     if (showNotice) {
-                        showToast('Berhasil terhubung ke database PostgreSQL!', 'success');
+                        showToast('Berhasil terhubung ke Supabase Cloud Database!', 'success');
                     }
                     return;
                 }
