@@ -8,6 +8,7 @@ import authRoutes from "./routes/authRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
 import materialRoutes from "./routes/materialRoutes.js";
 import assignmentRoutes from "./routes/assignmentRoutes.js";
+import submissionRoutes from "./routes/submissionRoutes.js";
 import { upload } from "./middleware/uploadMiddleware.js"; // <-- Impor upload middleware
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,6 +27,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/materials", materialRoutes);
 app.use("/api/assignments", assignmentRoutes);
+app.use("/api/submissions", submissionRoutes);
 
 // Endpoint umum untuk unggah berkas tunggal (Mandiri)
 app.post("/api/upload", upload.single("file"), (req, res) => {

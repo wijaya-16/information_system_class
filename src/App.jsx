@@ -13,7 +13,7 @@ import ProfilePage from "./components/ProfilePage";
 import MembersPage from "./components/MembersPage";
 import Footer from "./components/Footer";
 import Toast from "./components/Toast";
-import { CLASS_MEMBERS, getMemberByNim } from "./data/classMembers";
+import { CLASS_MEMBERS } from "./data/classMembers";
 
 // ─── Express & MySQL API Layer ────────────────────────────────────────────────
 import { api, fetchAllData, checkServerHealth } from "./lib/api";
@@ -73,7 +73,7 @@ const INITIAL_DATABASE = {
     {
       id: 7,
       name: "Pemrograman Berorientasi Objek",
-      lecturer: "Dr. Muhammad Multazam, S.Kom., M.Kom",
+      lecturer: "Dr. Maspaeni, M. Kom",
       credits: 3,
       category: "Praktik",
       color: "bg-violet-500",
@@ -818,41 +818,12 @@ export default function App() {
   };
 
   // ─── Auth ─────────────────────────────────────────────────────────────────────
-  const handleLogin = (username, password) => {
-    const u = username.trim();
-    const p = password.trim();
-
-    // 1. Cek Login Admin
-    if (u === "admin" && p === "admin123") {
-      const mockUser = {
-        username: "admin",
-        fullname: "Administrator Kelas",
-        role: "admin",
-      };
-      setUser(mockUser);
-      localStorage.setItem("si_token", "mock-token-admin");
-      localStorage.setItem("si_user", JSON.stringify(mockUser));
-      showToast("Login berhasil! Selamat datang, Administrator Kelas");
-      return;
-    }
-
-    // 2. Cek Login Member Kelas (NIM)
-    if (u.toUpperCase() === p.toUpperCase()) {
-      const member = getMemberByNim(u, data.members || CLASS_MEMBERS);
-      if (member) {
-        setUser(member);
-        localStorage.setItem("si_token", `mock-token-${member.code}`);
-        localStorage.setItem("si_user", JSON.stringify(member));
-        showToast(
-          `Login berhasil! Selamat datang, ${member.fullname} (${member.nim})`,
-        );
-        return;
-      }
-    }
-
+  const handleLoginSuccess = (userData, jwtToken) => {
+    setUser(userData);
+    localStorage.setItem("si_token", jwtToken);
+    localStorage.setItem("si_user", JSON.stringify(userData));
     showToast(
-      "Login gagal! Untuk Admin gunakan admin/admin123, untuk Member gunakan NIM Anda (cth: 25SI001)",
-      "error",
+      `Selamat datang kembali, ${userData.fullname || userData.username}!`,
     );
   };
 
@@ -874,7 +845,7 @@ export default function App() {
   if (!user) {
     return (
       <>
-        <LoginView onLogin={handleLogin} />
+        <LoginView onLoginSuccess={handleLoginSuccess} />
         {toast && (
           <Toast
             message={toast.message}

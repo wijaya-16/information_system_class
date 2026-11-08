@@ -1,187 +1,137 @@
-import React, { useState } from 'react';
-import Icon from './Icons';
+import { useState } from "react";
+import { loginUser } from "../lib/api";
+import Icon from "./Icons";
 
-export default function LoginView({ onLogin }) {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [submitting, setSubmitting] = useState(false);
-    const [activeTab, setActiveTab] = useState('member'); // 'member' | 'admin'
+export default function LoginView({ onLoginSuccess }) {
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!username.trim() || !password.trim()) return;
-        setSubmitting(true);
-        await onLogin(username.trim(), password.trim());
-        setSubmitting(false);
-    };
+  // ─── HANDLER LOGIN ────────────────────────────────────────────────────────
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    const quickFill = (u, p) => {
-        setUsername(u);
-        setPassword(p);
-    };
+    if (!identifier.trim() || !password.trim()) {
+      setError("NIM/Email dan Password wajib diisi.");
+      return;
+    }
 
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4 py-8">
-            <div className="max-w-md w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-6">
-                {/* Header Logo */}
-                <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-slate-900 text-white mb-3 shadow-sm">
-                        <Icon name="graduation-cap" className="w-6 h-6" />
-                    </div>
-                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Kelas Sistem Informasi</h1>
-                    <p className="text-xs text-slate-500 mt-1">Portal Akademik Mahasiswa & Administrator</p>
-                </div>
+    setError("");
+    setLoading(true);
 
-                {/* Tab Pilihan Login */}
-                <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setActiveTab('member');
-                            quickFill('25SI001', '25SI001');
-                        }}
-                        className={`py-2 rounded-lg transition flex items-center justify-center gap-1.5 ${
-                            activeTab === 'member'
-                                ? 'bg-white text-slate-900 shadow-sm font-bold'
-                                : 'text-slate-500 hover:text-slate-900'
-                        }`}
-                    >
-                        <Icon name="user" className="w-3.5 h-3.5" />
-                        Member Kelas (NIM)
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setActiveTab('admin');
-                            quickFill('admin', 'admin123');
-                        }}
-                        className={`py-2 rounded-lg transition flex items-center justify-center gap-1.5 ${
-                            activeTab === 'admin'
-                                ? 'bg-white text-slate-900 shadow-sm font-bold'
-                                : 'text-slate-500 hover:text-slate-900'
-                        }`}
-                    >
-                        <Icon name="shield" className="w-3.5 h-3.5" />
-                        Administrator
-                    </button>
-                </div>
+    let result;
+    // 1. Panggilan API Login ke Backend Express
+    try {
+      result = await loginUser({
+        identifier: identifier.trim(),
+        password: password.trim(),
+      });
+    } catch (err) {
+      const message =
+        err.response?.data?.message ||
+        "Gagal masuk. Periksa kembali NIM/Email dan password Anda.";
+      setError(message);
+      setLoading(false);
+      return;
+    }
 
-                {/* Petunjuk Akun */}
-                <div className={`p-3.5 rounded-xl border text-xs leading-relaxed ${
-                    activeTab === 'member'
-                        ? 'bg-blue-50/70 border-blue-200 text-blue-900'
-                        : 'bg-amber-50/70 border-amber-200 text-amber-900'
-                }`}>
-                    {activeTab === 'member' ? 
-                    (
-                        <div>
-                            <p className="font-bold justify-center flex items-center gap-1.5">
-                                <Icon name="info" className="w-3.5 h-3.5 text-blue-600" />
-                                Login Member Kelas
-                            </p>
-                            {/* <p className="mt-1 text-[11px] text-blue-800">
-                                Gunakan <strong>NIM</strong> Anda untuk Username & Password. 3 digit angka terakhir NIM (contoh: <strong>001, 002, 011</strong>) menentukan profil unik mahasiswa.
-                            </p> */}
-                        </div>
-                    ) 
-                    : 
-                    (
-                        <div>
-                            <p className="font-bold flex items-center justify-center gap-1.5">
-                                <Icon name="shield-check" className="w-3.5 h-3.5 text-amber-600" />
-                                Login Administrator
-                            </p>
-                            {/* <p className="mt-1 text-[11px] text-amber-800">
-                                Akses penuh untuk mengelola mata kuliah, materi, tugas, dan pengumuman. (User: <strong>admin</strong> · Pass: <strong>admin123</strong>)
-                            </p> */}
-                        </div>
-                    )
-                    }
-                </div>
+    // 2. Eksekusi Login Success di luar try-catch API
+    setLoading(false);
+    if (result && result.user) {
+      onLoginSuccess(result.user, result.token);
+    }
+  };
 
-                {/* Form Login */}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
-                            {activeTab === 'member' ? 'NIM / Username' : 'Username Admin'}
-                        </label>
-                        <input
-                            type="text"
-                            value={username}
-                            onChange={e => setUsername(e.target.value)}
-                            required
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm font-mono"
-                            placeholder={activeTab === 'member' ? 'cth: 25SI001' : 'admin'}
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
-                            {activeTab === 'member' ? 'Password' : 'Password Admin'}
-                        </label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            required
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm font-mono"
-                            placeholder={activeTab === 'member' ? 'Masukkan NIM Anda' : 'admin123'}
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={submitting}
-                        className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl transition shadow-sm flex items-center justify-center gap-2 text-sm mt-2"
-                    >
-                        {submitting ? (
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        ) : (
-                            <>
-                                <span>Masuk ke Portal</span>
-                                <Icon name="arrow-right" className="w-4 h-4" />
-                            </>
-                        )}
-                    </button>
-                </form>
-
-                {/* Tombol Demo Cepat */}
-                {/* <div className="pt-2 border-t border-slate-100 text-center">
-                    <span className="text-[11px] text-slate-400 block mb-2 font-medium">Uji Coba Akun Demo Cepat:</span>
-                    <div className="flex flex-wrap justify-center gap-1.5">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setActiveTab('member');
-                                quickFill('25SI001', '25SI001');
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold transition"
-                        >
-                            Member 25SI001 (Fauzan)
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setActiveTab('member');
-                                quickFill('25SI011', '25SI011');
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold transition"
-                        >
-                            Member 25SI011 (Ian)
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setActiveTab('admin');
-                                quickFill('admin', 'admin123');
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold transition"
-                        >
-                            Admin (admin123)
-                        </button>
-                    </div>
-                </div> */}
-            </div>
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-200 p-8">
+        {/* Header Logo & Judul */}
+        <div className="text-center mb-8">
+          <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md">
+            <Icon name="book-open" className="w-7 h-7" />
+          </div>
+          <h1 className="text-2xl font-black text-slate-900">
+            Portal Kelas SI
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Masuk untuk mengakses materi & tugas perkuliahan
+          </p>
         </div>
-    );
+
+        {/* Pesan Error */}
+        {error && (
+          <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+            <Icon
+              name="alert-circle"
+              className="w-4 h-4 shrink-0 text-red-500"
+            />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Form Input */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              NIM / Email / Username
+            </label>
+            <div className="relative">
+              <Icon
+                name="user"
+                className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="text"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="Masukkan NIM (cth: 25SI001) atau Email"
+                disabled={loading}
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 transition bg-slate-50 focus:bg-white"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              Password
+            </label>
+            <div className="relative">
+              <Icon
+                name="lock"
+                className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Masukkan Password"
+                disabled={loading}
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 transition bg-slate-50 focus:bg-white"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-2 py-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-sm"
+          >
+            {loading ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Memproses...</span>
+              </>
+            ) : (
+              <span>Masuk ke Akun</span>
+            )}
+          </button>
+        </form>
+
+        <p className="text-center text-[11px] text-slate-400 mt-6">
+          Sistem Informasi Kelas &copy; 2026
+        </p>
+      </div>
+    </div>
+  );
 }
