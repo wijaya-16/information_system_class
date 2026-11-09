@@ -35,15 +35,13 @@ export function getFileUrl(path) {
 }
 
 // 3. Helper Upload File (Mencegah Error MaterialsPage.jsx)
+// Perbaikan fungsi uploadFile di src/lib/api.js
 export async function uploadFile(file) {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await axiosInstance.post("/upload", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  // Jangan set 'Content-Type' secara manual agar boundary FormData dibuat otomatis oleh browser/Axios
+  const response = await axiosInstance.post("/upload", formData);
 
   return response.data; // Mengembalikan { file_url: '/uploads/filename...' }
 }

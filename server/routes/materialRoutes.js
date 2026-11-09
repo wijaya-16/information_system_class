@@ -1,14 +1,17 @@
 import express from "express";
 import {
-  getMaterialsByCourse,
+  getMaterials,
   createMaterial,
+  updateMaterial,
+  deleteMaterial,
 } from "../controllers/materialController.js";
-import { verifyToken } from "../middleware/authMiddleware.js";
-import { upload } from "../middleware/uploadMiddleware.js";
+import { verifyToken, isAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", getMaterialsByCourse);
-router.post("/", verifyToken, upload.single("file"), createMaterial);
+router.get("/", getMaterials);
+router.post("/", verifyToken, isAdmin, createMaterial);
+router.put("/:id", verifyToken, isAdmin, updateMaterial);
+router.delete("/:id", verifyToken, isAdmin, deleteMaterial);
 
 export default router;

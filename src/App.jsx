@@ -818,13 +818,17 @@ export default function App() {
   };
 
   // ─── Auth ─────────────────────────────────────────────────────────────────────
-  const handleLoginSuccess = (userData, jwtToken) => {
-    setUser(userData);
-    localStorage.setItem("si_token", jwtToken);
+  const handleLoginSuccess = (userData, token) => {
+    // 1. Simpan ke Local Storage
+    localStorage.setItem("si_token", token);
     localStorage.setItem("si_user", JSON.stringify(userData));
-    showToast(
-      `Selamat datang kembali, ${userData.fullname || userData.username}!`,
-    );
+
+    // 2. Perbarui State Aplikasi agar React langsung berpindah ke Dashboard
+    setUser(userData);
+    setToast({
+      message: `Selamat datang kembali, ${userData.fullname}!`,
+      type: "success",
+    });
   };
 
   const handleLogout = () => {
