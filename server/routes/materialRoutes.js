@@ -5,13 +5,13 @@ import {
   updateMaterial,
   deleteMaterial,
 } from "../controllers/materialController.js";
-import { verifyToken, isAdmin } from "../middleware/authMiddleware.js";
+import { upload } from "../middleware/upLoadMiddleware.js";
 
 const router = express.Router();
 
 router.get("/", getMaterials);
-router.post("/", verifyToken, isAdmin, createMaterial);
-router.put("/:id", verifyToken, isAdmin, updateMaterial);
-router.delete("/:id", verifyToken, isAdmin, deleteMaterial);
+router.post("/", upload.single("file"), createMaterial);
+router.put("/:id", upload.single("file"), updateMaterial);
+router.delete("/:id", deleteMaterial);
 
 export default router;

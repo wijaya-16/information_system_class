@@ -10,9 +10,18 @@ export const getSubmissions = async (req, res) => {
       query += " WHERE assignment_id = ?";
       params.push(assignment_id);
     }
-    query += " ORDER BY submitted_at DESC";
+    query += " ORDER BY id DESC";
 
-    const [submissions] = await pool.query(query, params);
+    const [rows] = await pool.query(query, params);
+    const submissions = rows.map(r => ({
+      id: r.id,
+      assignmentId: r.assignment_id,
+      nim: r.nim,
+      studentName: r.student_name,
+      note: r.note || "",
+      link: r.link || r.file_url || "",
+      submittedAt: r.submitted_at ? (typeof r.submitted_at === 'string' ? r.submitted_at : r.submitted_at.toISOString().split("T")[0]) : "",
+    }));
     res.json(submissions);
   } catch (error) {
     res.status(500).json({
@@ -23,7 +32,7 @@ export const getSubmissions = async (req, res) => {
 };
 
 export const createSubmission = async (req, res) => {
-  const { assignmentId, nim, studentName, note, link, file_url } = req.body;
+  const { id, assignmentId, nim, studentName, note, link, file_url, submittedAt } = req.body;
 
   if (!assignmentId || !nim || !studentName) {
     return res
@@ -31,20 +40,29 @@ export const createSubmission = async (req, res) => {
       .json({ message: "ID Tugas, NIM, dan Nama Mahasiswa wajib diisi" });
   }
 
+  const subId = id || Date.now();
+  const subDate = submittedAt || new Date().toISOString().split("T")[0];
+  const fileOrLink = link || file_url || null;
+
   try {
-    const [result] = await pool.query(
-      `INSERT INTO submissions (assignment_id, nim, student_name, note, file_url) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [assignmentId, nim, studentName, note || null, link || file_url || null],
+    await pool.query(
+      `INSERT INTO submissions (id, assignment_id, nim, student_name, note, link, file_url, submitted_at) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE note=VALUES(note), link=VALUES(link), file_url=VALUES(file_url), submitted_at=VALUES(submitted_at)`,
+      [subId, assignmentId, nim, studentName, note || null, fileOrLink, fileOrLink, subDate]
     );
 
     res.status(201).json({
-      message: "Tugas berhasil dikumpulkan",
-      id: result.insertId,
+      message: "Tugas berhasil dikumpulkan ke MySQL",
+      id: subId,
+      assignmentId,
+      nim,
+      studentName,
+      note,
+      link: fileOrLink,
+      submittedAt: subDate,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Gagal mengumpulkan tugas", error: error.message });
+    res.status(500).json({ message: "Gagal mengumpulkan tugas", error: error.message });
   }
 };

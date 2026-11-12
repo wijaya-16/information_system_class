@@ -15,7 +15,7 @@ import Footer from "./components/Footer";
 import Toast from "./components/Toast";
 import { CLASS_MEMBERS } from "./data/classMembers";
 
-// ─── Express & MySQL API Layer ────────────────────────────────────────────────
+// â”€â”€â”€ Supabase API Layer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 import { api, fetchAllData, checkServerHealth } from "./lib/api";
 
 const STORAGE_KEY = "si_database_v2";
@@ -274,21 +274,20 @@ export default function App() {
     const savedUser = localStorage.getItem("si_user");
     if (savedToken && savedUser) {
       try {
-        return JSON.parse(savedUser);
+        const parsed = JSON.parse(savedUser);
+        if (parsed && parsed.role) return parsed;
       } catch {
         /* ignore error */
       }
     }
-    return savedToken
-      ? { username: "admin", fullname: "Administrator Kelas", role: "admin" }
-      : null;
+    return null;
   });
 
   const [activePage, setActivePage] = useState("beranda");
   const [pageParams, setPageParams] = useState({});
   const [toast, setToast] = useState(null);
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const showToast = useCallback((message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
@@ -296,7 +295,7 @@ export default function App() {
 
   const nextId = () => Date.now();
 
-  // ─── State Database ──────────────────────────────────────────────────────────
+  // â”€â”€â”€ State Database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [dbConnected, setDbConnected] = useState(false);
   const [data, setData] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -315,7 +314,7 @@ export default function App() {
     return INITIAL_DATABASE;
   });
 
-  // ─── Sinkronisasi Data dengan Express MySQL Backend ────────────────────────────
+  // ─── Sinkronisasi Data dengan Database MySQL (Laragon) ──────────────────────
   const loadFromDatabase = useCallback(
     async (showNotice = false) => {
       try {
@@ -323,7 +322,7 @@ export default function App() {
         if (health.status === "ok") {
           setDbConnected(true);
           const cloudData = await fetchAllData();
-          if (cloudData && cloudData.courses) {
+          if (cloudData && cloudData.courses && cloudData.courses.length > 0) {
             setData((prev) => ({
               ...prev,
               ...cloudData,
@@ -331,7 +330,7 @@ export default function App() {
             }));
             if (showNotice) {
               showToast(
-                "Berhasil terhubung ke Server Database MySQL!",
+                "Berhasil terhubung ke Database MySQL (Laragon)!",
                 "success",
               );
             }
@@ -346,14 +345,6 @@ export default function App() {
     },
     [showToast],
   );
-
-  // useEffect(() => {
-  //   void loadFromDatabase(true);
-  //   const interval = setInterval(() => {
-  //     void loadFromDatabase(false);
-  //   }, 8000);
-  //   return () => clearInterval(interval);
-  // }, [loadFromDatabase]);
 
   // Simpan cadangan ke localStorage
 
@@ -396,7 +387,7 @@ export default function App() {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [showToast]);
 
-  // ─── CRUD: Mata Kuliah ────────────────────────────────────────────────────────
+  // â”€â”€â”€ CRUD: Mata Kuliah â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const addCourse = async (courseData) => {
     const newItem = { ...courseData, id: nextId() };
     setData((d) => ({ ...d, courses: [...(d.courses || []), newItem] }));
@@ -404,7 +395,7 @@ export default function App() {
       await api.courses.add(newItem);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, tersimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
@@ -441,7 +432,7 @@ export default function App() {
       await api.courses.update(id, courseData);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, tersimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
@@ -461,14 +452,14 @@ export default function App() {
       await api.courses.delete(id);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, tersimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
     showToast("Mata kuliah beserta kontennya telah dihapus", "error");
   };
 
-  // ─── CRUD: Materi ────────────────────────────────────────────────────────────
+  // â”€â”€â”€ CRUD: Materi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const addMaterial = async (mat) => {
     const newItem = { ...mat, id: nextId() };
     setData((d) => ({ ...d, materials: [...(d.materials || []), newItem] }));
@@ -476,7 +467,7 @@ export default function App() {
       await api.materials.add(newItem);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, tersimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
@@ -492,7 +483,7 @@ export default function App() {
       await api.materials.update(id, mat);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
@@ -508,14 +499,14 @@ export default function App() {
       await api.materials.delete(id);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
     showToast("Materi berhasil dihapus", "error");
   };
 
-  // ─── CRUD: Tugas ─────────────────────────────────────────────────────────────
+  // â”€â”€â”€ CRUD: Tugas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const addAssignment = async (a) => {
     const newItem = { ...a, id: nextId() };
     setData((d) => ({
@@ -526,7 +517,7 @@ export default function App() {
       await api.assignments.add(newItem);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
@@ -542,7 +533,7 @@ export default function App() {
       await api.assignments.update(id, a);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
@@ -558,14 +549,14 @@ export default function App() {
       await api.assignments.delete(id);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
     showToast("Tugas berhasil dihapus", "error");
   };
 
-  // ─── CRUD: Pengumuman ────────────────────────────────────────────────────────
+  // â”€â”€â”€ CRUD: Pengumuman â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const addAnnouncement = async (a) => {
     const newItem = { ...a, id: nextId() };
     setData((d) => ({
@@ -576,7 +567,7 @@ export default function App() {
       await api.announcements.add(newItem);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
@@ -594,7 +585,7 @@ export default function App() {
       await api.announcements.update(id, a);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
@@ -610,14 +601,14 @@ export default function App() {
       await api.announcements.delete(id);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
     showToast("Pengumuman berhasil dihapus", "error");
   };
 
-  // ─── CRUD: Foto Kelas ─────────────────────────────────────────────────────────
+  // â”€â”€â”€ CRUD: Foto Kelas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const addClassPhoto = async (photoData) => {
     const newPhoto = { ...photoData, id: nextId() };
     setData((d) => {
@@ -631,7 +622,7 @@ export default function App() {
       await api.photos.add(newPhoto);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
@@ -651,7 +642,7 @@ export default function App() {
       await api.photos.update(id, photoData);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
@@ -667,7 +658,7 @@ export default function App() {
       await api.photos.delete(id);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
@@ -686,14 +677,14 @@ export default function App() {
       await api.photos.setHero(id);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
     showToast("Foto utama kelas berhasil diatur");
   };
 
-  // ─── CRUD: Mahasiswa / Member ─────────────────────────────────────────────────
+  // â”€â”€â”€ CRUD: Mahasiswa / Member â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const addMember = async (code, memberData) => {
     setData((d) => ({
       ...d,
@@ -703,7 +694,7 @@ export default function App() {
       await api.members.add(code, memberData);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
@@ -735,7 +726,7 @@ export default function App() {
       await api.members.update(oldCode, newCode, memberData);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
@@ -752,14 +743,14 @@ export default function App() {
       await api.members.delete(code);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
     showToast(`Mahasiswa 25SI${code} berhasil dihapus`, "error");
   };
 
-  // ─── Pengumpulan Tugas ────────────────────────────────────────────────────────
+  // â”€â”€â”€ Pengumpulan Tugas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const submitAssignment = async (assignmentId, subData) => {
     const studentNim = user?.nim || user?.username || "25SI001";
     const newSub = {
@@ -783,7 +774,7 @@ export default function App() {
       await api.submissions.add(newSub);
     } catch (err) {
       console.warn(
-        "[MySQL] Server offline, disimpan secara lokal:",
+        "[Supabase] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
@@ -817,7 +808,7 @@ export default function App() {
     member: { add: addMember, update: updateMember, delete: deleteMember },
   };
 
-  // ─── Auth ─────────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleLoginSuccess = (userData, token) => {
     // 1. Simpan ke Local Storage
     localStorage.setItem("si_token", token);
@@ -831,21 +822,7 @@ export default function App() {
     });
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem("si_token");
-    localStorage.removeItem("si_user");
-    showToast("Berhasil Keluar Dari Sistem");
-  };
-
-  // ─── Navigasi ─────────────────────────────────────────────────────────────────
-  const navigateTo = (page, params = {}) => {
-    setActivePage(page);
-    setPageParams(params);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // ─── Halaman Login ─────────────────────────────────────────────────────────────
+  // Pada bagian conditional rendering saat user belum login:
   if (!user) {
     return (
       <>
@@ -861,7 +838,37 @@ export default function App() {
     );
   }
 
-  // ─── Halaman Utama ─────────────────────────────────────────────────────────────
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem("si_token");
+    localStorage.removeItem("si_user");
+    showToast("Berhasil Keluar Dari Sistem");
+  };
+
+  // â”€â”€â”€ Navigasi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const navigateTo = (page, params = {}) => {
+    setActivePage(page);
+    setPageParams(params);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // â”€â”€â”€ Halaman Login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  if (!user) {
+    return (
+      <>
+        <LoginView onLoginSuccess={handleLoginSuccess} />
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+      </>
+    );
+  }
+
+  // â”€â”€â”€ Halaman Utama â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const knownPages = [
     "beranda",
     "galeri",
@@ -1021,3 +1028,4 @@ export default function App() {
     </div>
   );
 }
+

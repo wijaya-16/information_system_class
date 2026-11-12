@@ -1,6 +1,6 @@
 import axios from "axios";
 
-// 1. Base URL & Axios Instance Utama
+// Base URL API Backend Express + MySQL
 const BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
@@ -9,9 +9,10 @@ export const axiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 8000,
 });
 
-// Interceptor: Otomatis sisipkan Token JWT di setiap request jika pengguna sudah login
+// Interceptor: Otomatis sisipkan Token JWT jika pengguna login
 axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem("si_token");
   if (token) {
@@ -20,7 +21,7 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
-// 2. Helper URL File/Gambar (Mencegah Error Navbar.jsx)
+// ─── 1. Helper URL File / Gambar ─────────────────────────────────────────────
 export function getFileUrl(path) {
   if (!path) return "";
   if (
@@ -34,59 +35,80 @@ export function getFileUrl(path) {
   return `${serverBase}${path.startsWith("/") ? "" : "/"}${path}`;
 }
 
-// 3. Helper Upload File (Mencegah Error MaterialsPage.jsx)
-// Perbaikan fungsi uploadFile di src/lib/api.js
+// ─── 2. Helper Upload File ke Backend Multer ─────────────────────────────────
 export async function uploadFile(file) {
   const formData = new FormData();
   formData.append("file", file);
 
-  // Jangan set 'Content-Type' secara manual agar boundary FormData dibuat otomatis oleh browser/Axios
-  const response = await axiosInstance.post("/upload", formData);
+  const response = await axiosInstance.post("/upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 
-  return response.data; // Mengembalikan { file_url: '/uploads/filename...' }
+  return response.data; // { file_url: '/uploads/filename.ext' }
 }
 
-// 4. Health Check & Fetch All Data
+// ─── 3. Health Check & Fetch All Data ─────────────────────────────────────────
 export async function checkServerHealth() {
   try {
-    const res = await axiosInstance.get("/courses");
+    const res = await axiosInstance.get("/health");
     return { status: "ok", data: res.data };
-  } catch (err) {
-    return { status: "error", message: err.message };
+  } catch {
+    try {
+      const resFallback = await axiosInstance.get("/courses");
+      return { status: "ok", data: resFallback.data };
+    } catch (err) {
+      return { status: "error", message: err.message };
+    }
   }
 }
 
 export async function fetchAllData() {
   try {
-    const [coursesRes, materialsRes, assignmentsRes, submissionsRes] =
-      await Promise.allSettled([
-        axiosInstance.get("/courses"),
-        axiosInstance.get("/materials"),
-        axiosInstance.get("/assignments"),
-        axiosInstance.get("/submissions"),
-      ]);
+    const [
+      coursesRes,
+      materialsRes,
+      assignmentsRes,
+      announcementsRes,
+      photosRes,
+      membersRes,
+      submissionsRes,
+    ] = await Promise.allSettled([
+      axiosInstance.get("/courses"),
+      axiosInstance.get("/materials"),
+      axiosInstance.get("/assignments"),
+      axiosInstance.get("/announcements"),
+      axiosInstance.get("/photos"),
+      axiosInstance.get("/members"),
+      axiosInstance.get("/submissions"),
+    ]);
+
+    const get = (res, fallback = []) =>
+      res.status === "fulfilled" && res.value?.data ? res.value.data : fallback;
 
     return {
-      courses: coursesRes.status === "fulfilled" ? coursesRes.data : [],
-      materials: materialsRes.status === "fulfilled" ? materialsRes.data : [],
-      assignments:
-        assignmentsRes.status === "fulfilled" ? assignmentsRes.data : [],
-      submissions:
-        submissionsRes.status === "fulfilled" ? submissionsRes.data : [],
+      courses: get(coursesRes),
+      materials: get(materialsRes),
+      assignments: get(assignmentsRes),
+      announcements: get(announcementsRes),
+      classPhotos: get(photosRes),
+      members: get(membersRes, {}),
+      submissions: get(submissionsRes),
     };
   } catch (error) {
-    console.error("Gagal mengambil data dari server:", error);
+    console.warn("Gagal mengambil data lengkap dari server MySQL:", error.message);
     return null;
   }
 }
 
-// 5. Auth API
+// ─── 4. Auth API (Login Administrator & Member Mahasiswa) ─────────────────────
 export async function loginUser(credentials) {
   const response = await axiosInstance.post("/auth/login", credentials);
-  return response.data;
+  return response.data; // { message, token, user }
 }
 
-// 6. Object Helper CRUD untuk App.jsx
+// ─── 5. Object Helper CRUD untuk App.jsx ──────────────────────────────────────
 export const api = {
   courses: {
     add: (item) => axiosInstance.post("/courses", item),

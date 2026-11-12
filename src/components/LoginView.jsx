@@ -13,7 +13,7 @@ export default function LoginView({ onLoginSuccess }) {
     e.preventDefault();
 
     if (!identifier.trim() || !password.trim()) {
-      setError("NIM/Email dan Password wajib diisi.");
+      setError("NIM / Email / Username dan Password wajib diisi.");
       return;
     }
 
@@ -21,7 +21,7 @@ export default function LoginView({ onLoginSuccess }) {
     setLoading(true);
 
     let result;
-    // 1. Panggilan API Login ke Backend Express
+    // 1. Panggilan Login via Backend MySQL
     try {
       result = await loginUser({
         identifier: identifier.trim(),
@@ -30,7 +30,8 @@ export default function LoginView({ onLoginSuccess }) {
     } catch (err) {
       const message =
         err.response?.data?.message ||
-        "Gagal masuk. Periksa kembali NIM/Email dan password Anda.";
+        err.message ||
+        "Gagal masuk. Periksa kembali NIM/Username dan password Anda.";
       setError(message);
       setLoading(false);
       return;
@@ -39,14 +40,17 @@ export default function LoginView({ onLoginSuccess }) {
     // 2. Eksekusi Login Success di luar try-catch API
     setLoading(false);
     if (result && result.user) {
-      onLoginSuccess(result.user, result.token);
+      if (typeof onLoginSuccess === "function") {
+        onLoginSuccess(result.user, result.token);
+      } else {
+        console.error("Prop onLoginSuccess belum diteruskan dari App.jsx");
+      }
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-200 p-8">
-        {/* Header Logo & Judul */}
         <div className="text-center mb-8">
           <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md">
             <Icon name="book-open" className="w-7 h-7" />
@@ -59,7 +63,6 @@ export default function LoginView({ onLoginSuccess }) {
           </p>
         </div>
 
-        {/* Pesan Error */}
         {error && (
           <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
             <Icon
@@ -70,7 +73,6 @@ export default function LoginView({ onLoginSuccess }) {
           </div>
         )}
 
-        {/* Form Input */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
@@ -85,7 +87,7 @@ export default function LoginView({ onLoginSuccess }) {
                 type="text"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="Masukkan NIM (cth: 25SI001) atau Email"
+                placeholder="Masukkan NIM (cth: 25SI001) atau Username"
                 disabled={loading}
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 transition bg-slate-50 focus:bg-white"
               />

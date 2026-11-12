@@ -6,21 +6,11 @@ import {
   deleteAssignment,
 } from "../controllers/assignmentController.js";
 
-// ✅ Wajib '../' (dua titik di awal, TANPA slash di paling depan)
-import { upload } from "./middleware/uploadMiddleware.js";
-import { verifyToken, isAdmin } from "../middleware/authMiddleware.js";
-
 const router = express.Router();
 
 router.get("/", getAssignments);
-router.post("/", verifyToken, isAdmin, upload.single("file"), createAssignment);
-router.put(
-  "/:id",
-  verifyToken,
-  isAdmin,
-  upload.single("file"),
-  updateAssignment,
-);
-router.delete("/:id", verifyToken, isAdmin, deleteAssignment);
+router.post("/", createAssignment);
+router.put("/:id", updateAssignment);
+router.delete("/:id", deleteAssignment);
 
 export default router;

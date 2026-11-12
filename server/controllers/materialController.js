@@ -1,43 +1,88 @@
 import pool from "../config/db.js";
 
-// Ambil semua materi berdasarkan course_id
-export const getMaterialsByCourse = async (req, res) => {
-  const { course_id } = req.query;
+export const getMaterials = async (req, res) => {
   try {
-    let query = "SELECT * FROM materials";
-    const params = [];
-
-    if (course_id) {
-      query += " WHERE course_id = ?";
-      params.push(course_id);
-    }
-
-    query += " ORDER BY created_at DESC";
-    const [materials] = await pool.query(query, params);
+    const [materials] = await pool.query("SELECT * FROM materials ORDER BY id ASC");
     res.json(materials);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Gagal mengambil data materi", error: error.message });
+    res.status(500).json({
+      message: "Gagal mengambil data materi",
+      error: error.message,
+    });
   }
 };
 
-// Tambah materi baru (Mendukung upload file via Multer)
 export const createMaterial = async (req, res) => {
-  const { course_id, title, description, external_link } = req.body;
-  const file_url = req.file ? `/uploads/${req.file.filename}` : null;
+  const { id, title, course, type, size, date, semester, lecturer, description, file_url } = req.body;
+  const matId = id || Date.now();
+  const file = req.file ? `/uploads/${req.file.filename}` : (file_url || null);
+
+  try {
+    await pool.query(
+      `INSERT INTO materials (id, title, course, type, size, date, semester, lecturer, description, file_url) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE title=VALUES(title), course=VALUES(course), file_url=VALUES(file_url)`,
+      [
+        matId,
+        title,
+        course || "",
+        type || "PDF",
+        size || "2.5MB",
+        date || new Date().toISOString().split("T")[0],
+        semester || "Semester 3",
+        lecturer || "",
+        description || "",
+        file,
+      ]
+    );
+    res.status(201).json({
+      message: "Materi berhasil ditambahkan",
+      id: matId,
+      title,
+      course,
+      file_url: file,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Gagal menambahkan materi", error: error.message });
+  }
+};
+
+export const updateMaterial = async (req, res) => {
+  const { id } = req.params;
+  const { title, course, type, size, date, semester, lecturer, description, file_url } = req.body;
+  const file = req.file ? `/uploads/${req.file.filename}` : file_url;
 
   try {
     const [result] = await pool.query(
-      "INSERT INTO materials (course_id, title, description, file_url, external_link) VALUES (?, ?, ?, ?, ?)",
-      [course_id, title, description, file_url, external_link],
+      `UPDATE materials 
+       SET title = COALESCE(?, title),
+           course = COALESCE(?, course),
+           type = COALESCE(?, type),
+           size = COALESCE(?, size),
+           date = COALESCE(?, date),
+           semester = COALESCE(?, semester),
+           lecturer = COALESCE(?, lecturer),
+           description = COALESCE(?, description),
+           file_url = COALESCE(?, file_url)
+       WHERE id = ?`,
+      [title, course, type, size, date, semester, lecturer, description, file, id]
     );
-    res
-      .status(201)
-      .json({ message: "Materi berhasil ditambahkan", id: result.insertId });
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Materi tidak ditemukan" });
+    }
+    res.json({ message: "Materi berhasil diperbarui" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Gagal menambahkan materi", error: error.message });
+    res.status(500).json({ message: "Gagal memperbarui materi", error: error.message });
+  }
+};
+
+export const deleteMaterial = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query("DELETE FROM materials WHERE id = ?", [id]);
+    res.json({ message: "Materi berhasil dihapus" });
+  } catch (error) {
+    res.status(500).json({ message: "Gagal menghapus materi", error: error.message });
   }
 };
