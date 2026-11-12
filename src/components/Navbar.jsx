@@ -164,21 +164,6 @@ export default function Navbar({
           ))}
         </nav>
 
-        {/* Badge Status Database — Desktop */}
-        <div className="hidden md:flex items-center">
-          {dbConnected ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              MySQL Online
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-              Tersimpan di HP (Offline)
-            </span>
-          )}
-        </div>
-
         {/* User info + Logout — Desktop */}
         <div className="hidden md:flex items-center gap-2.5 pl-3 border-l border-slate-200">
           <div

@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar";
 import BottomNavigation from "./components/BottomNavigation";
 import LoginView from "./components/LoginView";
 import HomePage from "./components/HomePage";
+import GalleryPage from "./components/GalleryPage";
 import MaterialsPage from "./components/MaterialsPage";
 import MaterialDetailPage from "./components/MaterialDetailPage";
 import CoursesPage from "./components/CoursesPage";
@@ -232,6 +233,7 @@ const INITIAL_DATABASE = {
       title: "Foto Kebersamaan Kelas Sistem Informasi",
       caption:
         "Pertemuan perdana perkuliahan Semester 3 tahun ajaran 2025/2026. Semangat belajar dan berkolaborasi bersama!",
+      category: "Makrab & Kebersamaan",
       date: "2026-10-15",
       isHero: true,
     },
@@ -241,7 +243,68 @@ const INITIAL_DATABASE = {
       title: "Diskusi Kelompok Pemrograman Web & UI/UX",
       caption:
         "Suasana kolaborasi dan pengerjaan tugas proyek di laboratorium komputer.",
+      category: "Praktikum & Perkuliahan",
       date: "2026-10-18",
+      isHero: false,
+    },
+    {
+      id: 3,
+      url: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1200&q=80",
+      title: "Kuliah Tamu Big Data Analytics",
+      caption:
+        "Sesi kuliah tamu bersama praktisi industri membahas tren Big Data dan AI di era digital.",
+      category: "Seminar & Workshop",
+      date: "2026-10-22",
+      isHero: false,
+    },
+    {
+      id: 4,
+      url: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=1200&q=80",
+      title: "Praktikum Basis Data di Lab Komputer",
+      caption:
+        "Mahasiswa mengerjakan praktikum query SQL dan normalisasi database di laboratorium.",
+      category: "Praktikum & Perkuliahan",
+      date: "2026-10-25",
+      isHero: false,
+    },
+    {
+      id: 5,
+      url: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80",
+      title: "Makan Bersama Setelah UTS",
+      caption:
+        "Merayakan selesainya Ujian Tengah Semester dengan makan bersama seluruh anggota kelas.",
+      category: "Makrab & Kebersamaan",
+      date: "2026-11-01",
+      isHero: false,
+    },
+    {
+      id: 6,
+      url: "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1200&q=80",
+      title: "Workshop UI/UX Design Thinking",
+      caption:
+        "Workshop intensif membahas metode Design Thinking dan prototyping menggunakan Figma.",
+      category: "Seminar & Workshop",
+      date: "2026-11-05",
+      isHero: false,
+    },
+    {
+      id: 7,
+      url: "https://images.unsplash.com/photo-1488190211105-8b0e65b80b4e?auto=format&fit=crop&w=1200&q=80",
+      title: "Study Tour ke Perusahaan Tech",
+      caption:
+        "Kunjungan industri ke perusahaan teknologi untuk melihat langsung proses pengembangan software.",
+      category: "Kegiatan Luar",
+      date: "2026-11-08",
+      isHero: false,
+    },
+    {
+      id: 8,
+      url: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1200&q=80",
+      title: "Presentasi Proyek Akhir Kelompok",
+      caption:
+        "Momen seru saat presentasi proyek akhir mata kuliah Teknologi Web di depan kelas.",
+      category: "Praktikum & Perkuliahan",
+      date: "2026-11-10",
       isHero: false,
     },
   ],
@@ -316,7 +379,7 @@ export default function App() {
 
   // ─── Sinkronisasi Data dengan Database MySQL (Laragon) ──────────────────────
   const loadFromDatabase = useCallback(
-    async (showNotice = false) => {
+    async () => {
       try {
         const health = await checkServerHealth();
         if (health.status === "ok") {
@@ -328,12 +391,6 @@ export default function App() {
               ...cloudData,
               members: { ...CLASS_MEMBERS, ...(cloudData.members || {}) },
             }));
-            if (showNotice) {
-              showToast(
-                "Berhasil terhubung ke Database MySQL (Laragon)!",
-                "success",
-              );
-            }
             return;
           }
         } else {
@@ -343,7 +400,7 @@ export default function App() {
         setDbConnected(false);
       }
     },
-    [showToast],
+    [],
   );
 
   // Simpan cadangan ke localStorage
@@ -351,13 +408,13 @@ export default function App() {
   useEffect(() => {
     // Membungkus panggilan ke dalam fungsi async lokal
     const fetchInitialData = async () => {
-      await loadFromDatabase(true);
+      await loadFromDatabase();
     };
 
     fetchInitialData();
 
     const interval = setInterval(() => {
-      loadFromDatabase(false).catch(() => {});
+      loadFromDatabase().catch(() => {});
     }, 8000);
 
     return () => clearInterval(interval);
@@ -816,10 +873,7 @@ export default function App() {
 
     // 2. Perbarui State Aplikasi agar React langsung berpindah ke Dashboard
     setUser(userData);
-    setToast({
-      message: `Selamat datang kembali, ${userData.fullname}!`,
-      type: "success",
-    });
+    showToast(`Selamat datang kembali, ${userData.fullname}!`, "success");
   };
 
   // Pada bagian conditional rendering saat user belum login:
@@ -894,7 +948,7 @@ export default function App() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {(activePage === "beranda" || activePage === "galeri") && (
+        {activePage === "beranda" && (
           <HomePage
             data={data}
             navigateTo={navigateTo}
@@ -902,7 +956,16 @@ export default function App() {
             isAdmin={isAdmin}
             adminHandlers={adminHandlers}
             showToast={showToast}
-            initialTab={activePage === "galeri" ? "galeri" : "beranda"}
+            initialTab="beranda"
+          />
+        )}
+        {activePage === "galeri" && (
+          <GalleryPage
+            photos={data.classPhotos || []}
+            isAdmin={isAdmin}
+            adminHandlers={adminHandlers}
+            showToast={showToast}
+            navigateTo={navigateTo}
           />
         )}
         {activePage === "materi" && (
