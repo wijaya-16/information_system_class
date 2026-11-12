@@ -1049,6 +1049,9 @@ export default function App() {
             adminHandlers={adminHandlers}
             showToast={showToast}
             navigateTo={navigateTo}
+            assignments={data.assignments || []}
+            submissions={data.submissions || []}
+            courses={data.courses || []}
           />
         )}
         {activePage === "profile" && (
@@ -1056,6 +1059,8 @@ export default function App() {
             user={user}
             onLogout={handleLogout}
             navigateTo={navigateTo}
+            adminHandlers={adminHandlers}
+            showToast={showToast}
           />
         )}
 

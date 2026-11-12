@@ -255,7 +255,7 @@ async function init() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS class_photos (
       id BIGINT PRIMARY KEY,
-      url VARCHAR(500) NOT NULL,
+      url LONGTEXT NOT NULL,
       title VARCHAR(200) NOT NULL,
       caption TEXT NULL,
       date VARCHAR(50) NULL,
@@ -264,6 +264,9 @@ async function init() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB;
   `);
+
+  try { await pool.query("ALTER TABLE class_photos MODIFY COLUMN url LONGTEXT NOT NULL"); } catch {}
+  try { await pool.query("ALTER TABLE members_list MODIFY COLUMN photo LONGTEXT NULL"); } catch {}
 
   const initialPhotos = [
     [1, "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80", "Foto Kebersamaan Kelas Sistem Informasi", "Pertemuan perdana perkuliahan Semester 3 tahun ajaran 2025/2026. Semangat belajar dan berkolaborasi bersama!", "2026-10-15", "Praktikum & Perkuliahan", 1],

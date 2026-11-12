@@ -87,7 +87,7 @@ export default function LoginView({ onLoginSuccess }) {
                 type="text"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="Masukkan NIM (cth: 25SI001) atau Username"
+                placeholder="Masukkan NIM (cth: 25SI0..) atau Username"
                 disabled={loading}
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 transition bg-slate-50 focus:bg-white"
               />

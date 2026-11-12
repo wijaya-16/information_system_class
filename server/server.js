@@ -13,6 +13,17 @@ import photoRoutes from "./routes/photoRoutes.js";
 import memberRoutes from "./routes/memberRoutes.js";
 import submissionRoutes from "./routes/submissionRoutes.js";
 import { upload } from "./middleware/upLoadMiddleware.js";
+import pool from "./config/db.js";
+
+// Pastikan tipe kolom url di galeri dan photo di members dapat menampung data gambar
+(async () => {
+  try {
+    await pool.query("ALTER TABLE class_photos MODIFY COLUMN url LONGTEXT NOT NULL");
+    await pool.query("ALTER TABLE members_list MODIFY COLUMN photo LONGTEXT NULL");
+  } catch (err) {
+    // Abaikan jika database belum siap
+  }
+})();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
