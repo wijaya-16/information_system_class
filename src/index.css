@@ -1,3 +1,65 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Hero Section Animations ── */
+@keyframes hero-fade-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes hero-slide-up {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes hero-photo-ken-burns {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+@keyframes hero-glow-pulse {
+  0%, 100% { opacity: 0.12; transform: scale(1); }
+  50%      { opacity: 0.22; transform: scale(1.08); }
+}
+@keyframes hero-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+@keyframes hero-badge-pop {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.hero-animate-entrance { animation: hero-fade-in 0.7s ease-out both; }
+.hero-animate-entrance-delay { animation: hero-fade-in 0.7s 0.15s ease-out both; }
+.hero-animate-slide-up { animation: hero-slide-up 0.8s 0.1s ease-out both; }
+.hero-animate-slide-up-delay { animation: hero-slide-up 0.8s 0.3s ease-out both; }
+.hero-animate-photo { animation: hero-photo-ken-burns 25s ease-in-out infinite; }
+.hero-animate-glow { animation: hero-glow-pulse 6s ease-in-out infinite; }
+.hero-animate-float { animation: hero-float 4s ease-in-out infinite; }
+.hero-animate-badge-pop { animation: hero-badge-pop 0.4s 0.5s ease-out both; }
+
+/* Hero photo crossfade transition */
+.hero-photo-crossfade {
+  transition: opacity 0.8s ease-in-out;
+}
+
+/* Glass morphism effect for hero cards */
+.hero-glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Shimmer line effect */
+@keyframes shimmer-line {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.hero-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  animation: shimmer-line 3s ease-in-out infinite;
+}

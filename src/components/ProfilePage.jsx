@@ -34,31 +34,18 @@ export default function ProfilePage({ user, onLogout, navigateTo, adminHandlers,
         e.target.value = '';
     };
 
-    // Eksekusi simpan foto profil ke data mahasiswa & tabel galeri kelas
+    // Eksekusi simpan foto profil ke data profil mahasiswa
     const handleCropComplete = (croppedUrl) => {
         const code = user.code || (user.nim ? user.nim.replace('25SI', '') : null);
         if (code && adminHandlers?.member) {
-            // 1. Simpan ke data member
+            // Simpan foto profil ke data member
             adminHandlers.member.update(code, code, {
                 fullname: user.fullname,
                 gender: user.gender || 'L',
                 photo: croppedUrl,
             });
 
-            // 2. Simpan juga ke database tabel galeri kelas
-            if (adminHandlers?.classPhoto?.add) {
-                const memberNim = user.nim || `25SI${code}`;
-                adminHandlers.classPhoto.add({
-                    url: croppedUrl,
-                    title: `Foto Profil - ${user.fullname} (${memberNim})`,
-                    caption: `Dokumentasi foto profil resmi mahasiswa Sistem Informasi Semester 3: ${user.fullname} (${memberNim}).`,
-                    category: 'Mahasiswa/i Profile',
-                    date: new Date().toISOString().split('T')[0],
-                    isHero: false,
-                });
-            }
-
-            if (showToast) showToast('Foto profil berhasil disesuaikan dan tersimpan ke Galeri Kelas!', 'success');
+            if (showToast) showToast('Foto profil berhasil disesuaikan dan diperbarui!', 'success');
         }
 
         setCropperState({ isOpen: false, imageSrc: '' });

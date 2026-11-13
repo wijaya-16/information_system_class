@@ -267,20 +267,9 @@ async function init() {
 
   try { await pool.query("ALTER TABLE class_photos MODIFY COLUMN url LONGTEXT NOT NULL"); } catch {}
   try { await pool.query("ALTER TABLE members_list MODIFY COLUMN photo LONGTEXT NULL"); } catch {}
+  try { await pool.query("DELETE FROM class_photos WHERE url LIKE '%images.unsplash.com%'"); } catch {}
 
-  const initialPhotos = [
-    [1, "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80", "Foto Kebersamaan Kelas Sistem Informasi", "Pertemuan perdana perkuliahan Semester 3 tahun ajaran 2025/2026. Semangat belajar dan berkolaborasi bersama!", "2026-10-15", "Praktikum & Perkuliahan", 1],
-    [2, "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80", "Diskusi Kelompok Pemrograman Web & UI/UX", "Suasana kolaborasi dan pengerjaan tugas proyek di laboratorium komputer.", "2026-10-18", "Praktikum & Perkuliahan", 0]
-  ];
-
-  for (const p of initialPhotos) {
-    await pool.query(`
-      INSERT INTO class_photos (id, url, title, caption, date, category, is_hero)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE title=VALUES(title), url=VALUES(url);
-    `, p);
-  }
-  console.log("✓ Tabel class_photos berhasil disinkronkan.");
+  console.log("✓ Tabel class_photos berhasil disinkronkan (Siap untuk upload foto admin).");
 
   // 7. members_list
   await pool.query(`

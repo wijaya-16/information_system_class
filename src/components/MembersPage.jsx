@@ -99,21 +99,8 @@ export default function MembersPage({
                 setSelectedMember((prev) => ({ ...prev, photo: croppedUrl }));
             }
 
-            // 2. Simpan juga ke dalam database tabel galeri (class_photos)
-            if (adminHandlers.classPhoto?.add) {
-                const memberNim = `25SI${targetCode}`;
-                adminHandlers.classPhoto.add({
-                    url: croppedUrl,
-                    title: `Foto Profil - ${memberInfo.fullname} (${memberNim})`,
-                    caption: `Dokumentasi foto profil resmi mahasiswa Sistem Informasi Semester 3: ${memberInfo.fullname} (${memberNim}).`,
-                    category: 'Makrab & Kebersamaan',
-                    date: new Date().toISOString().split('T')[0],
-                    isHero: false,
-                });
-            }
-
             if (showToast) {
-                showToast('Foto profil berhasil disesuaikan dan tersimpan ke Galeri Kelas!', 'success');
+                showToast('Foto profil berhasil disesuaikan dan diperbarui!', 'success');
             }
         }
 

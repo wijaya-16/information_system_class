@@ -28,7 +28,7 @@ export const createPhoto = async (req, res) => {
     await pool.query(
       `INSERT INTO class_photos (id, url, title, caption, date, category, is_hero) 
        VALUES (?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE title=VALUES(title), url=VALUES(url), caption=VALUES(caption), is_hero=VALUES(is_hero)`,
+       ON DUPLICATE KEY UPDATE title=VALUES(title), url=VALUES(url), caption=VALUES(caption), category=VALUES(category), date=VALUES(date), is_hero=VALUES(is_hero)`,
       [
         photoId,
         url,

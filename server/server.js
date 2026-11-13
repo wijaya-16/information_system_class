@@ -20,6 +20,10 @@ import pool from "./config/db.js";
   try {
     await pool.query("ALTER TABLE class_photos MODIFY COLUMN url LONGTEXT NOT NULL");
     await pool.query("ALTER TABLE members_list MODIFY COLUMN photo LONGTEXT NULL");
+    // Bersihkan foto profil member agar galeri murni berisi kegiatan kelas
+    await pool.query("DELETE FROM class_photos WHERE title LIKE 'Foto Profil%'");
+    // Bersihkan foto mock manual unsplash agar tabel murni berisi foto hasil upload admin
+    await pool.query("DELETE FROM class_photos WHERE url LIKE '%images.unsplash.com%'");
   } catch (err) {
     // Abaikan jika database belum siap
   }

@@ -102,8 +102,8 @@ export default function GalleryPage({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [selectedPhoto, filteredPhotos]);
 
-    // Handle Upload file lokal (dengan Firebase Storage jika tersedia)
-    const handleFileUpload = async (e) => {
+    // Handle Upload file gambar dari perangkat (Laptop/PC atau Galeri & Kamera HP)
+    const handleFileUpload = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -112,39 +112,55 @@ export default function GalleryPage({
             return;
         }
 
-        setUploadProgress(0);
-        try {
-            const { url, storagePath } = await uploadImage(
-                file,
-                'gallery',
-                (progress) => setUploadProgress(progress)
-            );
-            setForm(f => ({
-                ...f,
-                url,
-                storagePath: storagePath || null,
-                title: f.title || file.name.replace(/\.[^/.]+$/, ''),
-            }));
-            if (showToast && storagePath) {
-                showToast('Foto berhasil diunggah ke cloud!');
-            }
-        } catch (err) {
-            console.error('Upload error:', err);
-            if (showToast) showToast('Gagal mengunggah foto. Coba lagi.', 'error');
-        } finally {
-            setUploadProgress(null);
-        }
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1280;
+                const MAX_HEIGHT = 1280;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width = Math.round((width * MAX_HEIGHT) / height);
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const compressedUrl = canvas.toDataURL('image/jpeg', 0.85);
+                setForm(f => ({
+                    ...f,
+                    url: compressedUrl,
+                    title: f.title || file.name.replace(/\.[^/.]+$/, ''),
+                }));
+            };
+            img.src = event.target?.result;
+        };
+        reader.readAsDataURL(file);
     };
 
     // Admin: Buka Modal Tambah
     const openAdd = () => {
+        if (!isAdmin) return;
         setForm({
             url: '',
             title: '',
             category: 'Praktikum & Perkuliahan',
             caption: '',
             date: getTodayDate(),
-            isHero: false,
+            isHero: photos.length === 0,
         });
         setEditTarget(null);
         setModalMode('add');
@@ -153,6 +169,7 @@ export default function GalleryPage({
     // Admin: Buka Modal Edit
     const openEdit = (e, photo) => {
         e.stopPropagation();
+        if (!isAdmin) return;
         setForm({
             url: photo.url || '',
             title: photo.title || '',
@@ -167,8 +184,9 @@ export default function GalleryPage({
 
     // Admin: Simpan Data Foto
     const handleSave = () => {
+        if (!isAdmin) return;
         if (!form.url.trim()) {
-            if (showToast) showToast('Silakan unggah foto atau masukkan URL gambar', 'error');
+            if (showToast) showToast('Silakan pilih dan unggah file gambar dari Laptop atau HP Anda', 'error');
             return;
         }
         if (!form.title.trim()) {
@@ -178,10 +196,8 @@ export default function GalleryPage({
 
         if (modalMode === 'add') {
             adminHandlers.classPhoto.add(form);
-            if (showToast) showToast('Dokumentasi baru berhasil ditambahkan');
         } else if (modalMode === 'edit' && editTarget) {
             adminHandlers.classPhoto.update(editTarget.id, form);
-            if (showToast) showToast('Dokumentasi berhasil diperbarui');
         }
         setModalMode(null);
     };
@@ -708,91 +724,69 @@ export default function GalleryPage({
                     onClose={() => setModalMode(null)}
                 >
                     <div className="space-y-4">
-                        {/* Pilihan Sumber Foto */}
-                        <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
-                                Berkas Foto / Gambar <span className="text-red-500">*</span>
-                            </label>
+                        {/* Hidden File Input untuk Laptop/PC/HP */}
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            accept="image/*"
+                            onChange={handleFileUpload}
+                            className="hidden"
+                        />
 
-                            <div className="space-y-3">
-                                {/* Opsi Upload Lokal */}
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        accept="image/*"
-                                        onChange={handleFileUpload}
-                                        className="hidden"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-xl transition border border-slate-200 flex items-center gap-2"
-                                    >
-                                        <Icon name="upload" className="w-4 h-4 text-slate-600" />
-                                        Pilih Dari Komputer / HP
-                                    </button>
-                                    <span className="text-xs text-slate-400">atau masukkan URL langsung di bawah</span>
+                        {/* Dropzone / Upload Area */}
+                        {!form.url ? (
+                            <div
+                                onClick={() => fileInputRef.current?.click()}
+                                className="cursor-pointer border-2 border-dashed border-blue-400 hover:border-blue-600 rounded-2xl bg-blue-50/60 hover:bg-blue-50/90 p-6 sm:p-8 text-center transition group space-y-3"
+                            >
+                                <div className="w-14 h-14 mx-auto rounded-2xl bg-blue-600/10 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner">
+                                    <Icon name="upload-cloud" className="w-7 h-7" />
                                 </div>
-
-                                {/* Input URL gambar */}
-                                <input
-                                    type="text"
-                                    placeholder="https://images.unsplash.com/... atau URL foto"
-                                    value={form.url.startsWith('data:') ? '(Foto lokal berhasil diunggah)' : form.url}
-                                    onChange={(e) => {
-                                        const v = e.target.value;
-                                        setForm(f => ({ ...f, url: v }));
-                                    }}
-                                    disabled={form.url.startsWith('data:')}
-                                    className={inputCls}
-                                />
-
-                                {form.url.startsWith('data:') && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setForm(f => ({ ...f, url: '' }))}
-                                        className="text-xs text-red-600 hover:underline inline-flex items-center gap-1"
-                                    >
-                                        <Icon name="x" className="w-3 h-3" /> Hapus file lokal & gunakan URL
-                                    </button>
-                                )}
-
-                                {/* Progress Bar Upload */}
-                                {uploadProgress !== null && (
-                                    <div className="mt-2 space-y-1">
-                                        <div className="flex justify-between text-xs text-slate-500">
-                                            <span>Mengunggah ke cloud...</span>
-                                            <span>{uploadProgress}%</span>
-                                        </div>
-                                        <div className="w-full bg-slate-100 rounded-full h-1.5">
-                                            <div
-                                                className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
-                                                style={{ width: `${uploadProgress}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
+                                <div className="space-y-1">
+                                    <p className="text-sm font-bold text-slate-800">
+                                        Ketuk atau Klik untuk Memilih Foto Dokumentasi
+                                    </p>
+                                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                                        Pilih foto dari Laptop/PC atau Galeri & Kamera HP (JPG, PNG, WebP). Otomatis dioptimasi dan tersimpan di database.
+                                    </p>
+                                </div>
+                                <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/25 transition">
+                                    <Icon name="image-plus" className="w-3.5 h-3.5" />
+                                    Pilih Gambar dari Perangkat
+                                </span>
                             </div>
-
-                            {/* Preview Foto */}
-                            {form.url && (
-                                <div className="mt-3 relative aspect-video rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
+                        ) : (
+                            <div className="space-y-2">
+                                <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-900 shadow-md group">
                                     <img
                                         src={form.url}
                                         alt="Preview"
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src = 'https://placehold.co/600x400?text=Gambar+Tidak+Dapat+Dimuat';
-                                        }}
+                                        className="h-full w-full object-cover"
                                     />
-                                    <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/60 text-white text-[10px] font-medium backdrop-blur-sm">
-                                        Preview Foto
-                                    </span>
+                                    <div className="absolute inset-0 bg-slate-950/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="px-4 py-2 rounded-xl bg-white text-slate-900 text-xs font-bold shadow-lg transition flex items-center gap-1.5 hover:bg-slate-100"
+                                        >
+                                            <Icon name="refresh-cw" className="w-3.5 h-3.5" /> Ganti Gambar
+                                        </button>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
+                                <div className="flex items-center justify-between text-xs px-1">
+                                    <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                                        <Icon name="check-circle" className="w-4 h-4" /> Berkas gambar siap disimpan ke database
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="text-blue-600 hover:underline font-bold text-xs"
+                                    >
+                                        Pilih foto lain
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Judul Foto */}
                         <FormField label="Judul Kenangan" required>
@@ -866,9 +860,10 @@ export default function GalleryPage({
                             <button
                                 type="button"
                                 onClick={handleSave}
-                                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition shadow-sm"
+                                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-md shadow-blue-600/20 active:scale-95 flex items-center gap-1.5"
                             >
-                                {modalMode === 'add' ? '💾 Simpan Kenangan' : '✅ Simpan Perubahan'}
+                                <Icon name="check" className="w-3.5 h-3.5" />
+                                {modalMode === 'add' ? 'Simpan ke Database' : 'Perbarui di Database'}
                             </button>
                         </div>
                     </div>

@@ -226,88 +226,8 @@ const INITIAL_DATABASE = {
       location: "Aula Utama",
     },
   ],
-  classPhotos: [
-    {
-      id: 1,
-      url: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80",
-      title: "Foto Kebersamaan Kelas Sistem Informasi",
-      caption:
-        "Pertemuan perdana perkuliahan Semester 3 tahun ajaran 2025/2026. Semangat belajar dan berkolaborasi bersama!",
-      category: "Makrab & Kebersamaan",
-      date: "2026-10-15",
-      isHero: true,
-    },
-    {
-      id: 2,
-      url: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80",
-      title: "Diskusi Kelompok Pemrograman Web & UI/UX",
-      caption:
-        "Suasana kolaborasi dan pengerjaan tugas proyek di laboratorium komputer.",
-      category: "Praktikum & Perkuliahan",
-      date: "2026-10-18",
-      isHero: false,
-    },
-    {
-      id: 3,
-      url: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1200&q=80",
-      title: "Kuliah Tamu Big Data Analytics",
-      caption:
-        "Sesi kuliah tamu bersama praktisi industri membahas tren Big Data dan AI di era digital.",
-      category: "Seminar & Workshop",
-      date: "2026-10-22",
-      isHero: false,
-    },
-    {
-      id: 4,
-      url: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=1200&q=80",
-      title: "Praktikum Basis Data di Lab Komputer",
-      caption:
-        "Mahasiswa mengerjakan praktikum query SQL dan normalisasi database di laboratorium.",
-      category: "Praktikum & Perkuliahan",
-      date: "2026-10-25",
-      isHero: false,
-    },
-    {
-      id: 5,
-      url: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80",
-      title: "Makan Bersama Setelah UTS",
-      caption:
-        "Merayakan selesainya Ujian Tengah Semester dengan makan bersama seluruh anggota kelas.",
-      category: "Makrab & Kebersamaan",
-      date: "2026-11-01",
-      isHero: false,
-    },
-    {
-      id: 6,
-      url: "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1200&q=80",
-      title: "Workshop UI/UX Design Thinking",
-      caption:
-        "Workshop intensif membahas metode Design Thinking dan prototyping menggunakan Figma.",
-      category: "Seminar & Workshop",
-      date: "2026-11-05",
-      isHero: false,
-    },
-    {
-      id: 7,
-      url: "https://images.unsplash.com/photo-1488190211105-8b0e65b80b4e?auto=format&fit=crop&w=1200&q=80",
-      title: "Study Tour ke Perusahaan Tech",
-      caption:
-        "Kunjungan industri ke perusahaan teknologi untuk melihat langsung proses pengembangan software.",
-      category: "Kegiatan Luar",
-      date: "2026-11-08",
-      isHero: false,
-    },
-    {
-      id: 8,
-      url: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1200&q=80",
-      title: "Presentasi Proyek Akhir Kelompok",
-      caption:
-        "Momen seru saat presentasi proyek akhir mata kuliah Teknologi Web di depan kelas.",
-      category: "Praktikum & Perkuliahan",
-      date: "2026-11-10",
-      isHero: false,
-    },
-  ],
+  // Foto kelas murni dari hasil upload Admin yang tersimpan di database
+  classPhotos: [],
   members: CLASS_MEMBERS,
   submissions: [
     {
@@ -358,7 +278,15 @@ export default function App() {
 
   const nextId = () => Date.now();
 
-  // â”€â”€â”€ State Database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Filter Galeri Khusus Kegiatan Kelas (Foto Profil Member & URL Mock Manual Tidak Masuk) ──
+  const filterClassOnlyPhotos = (photos) =>
+    (photos || []).filter(
+      (p) =>
+        !p.title?.toLowerCase().startsWith("foto profil") &&
+        !p.url?.includes("images.unsplash.com")
+    );
+
+  // ─── State Database ────────────────────────────────────────────────────────
   const [dbConnected, setDbConnected] = useState(false);
   const [data, setData] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -368,13 +296,17 @@ export default function App() {
         return {
           ...INITIAL_DATABASE,
           ...parsed,
+          classPhotos: filterClassOnlyPhotos(parsed.classPhotos || []),
           members: { ...CLASS_MEMBERS, ...(parsed.members || {}) },
         };
       } catch {
         /* ignore error */
       }
     }
-    return INITIAL_DATABASE;
+    return {
+      ...INITIAL_DATABASE,
+      classPhotos: [],
+    };
   });
 
   // ─── Sinkronisasi Data dengan Database MySQL (Laragon) ──────────────────────
@@ -389,6 +321,11 @@ export default function App() {
             setData((prev) => ({
               ...prev,
               ...cloudData,
+              classPhotos: filterClassOnlyPhotos(
+                Array.isArray(cloudData.classPhotos)
+                  ? cloudData.classPhotos
+                  : prev.classPhotos
+              ),
               members: { ...CLASS_MEMBERS, ...(cloudData.members || {}) },
             }));
             return;
@@ -665,7 +602,7 @@ export default function App() {
     showToast("Pengumuman berhasil dihapus", "error");
   };
 
-  // â”€â”€â”€ CRUD: Foto Kelas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── CRUD: Foto Kelas (Khusus Hak Akses Admin & Tersimpan di Database) ──────
   const addClassPhoto = async (photoData) => {
     const newPhoto = { ...photoData, id: nextId() };
     setData((d) => {
@@ -679,11 +616,11 @@ export default function App() {
       await api.photos.add(newPhoto);
     } catch (err) {
       console.warn(
-        "[Supabase] Tersimpan di lokal, akan sync saat online:",
+        "[Database MySQL] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
-    showToast("Foto kelas berhasil ditambahkan");
+    showToast("Foto kelas berhasil diunggah & tersimpan di database!", "success");
   };
 
   const updateClassPhoto = async (id, photoData) => {
@@ -699,11 +636,11 @@ export default function App() {
       await api.photos.update(id, photoData);
     } catch (err) {
       console.warn(
-        "[Supabase] Tersimpan di lokal, akan sync saat online:",
+        "[Database MySQL] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
-    showToast("Foto kelas berhasil diperbarui");
+    showToast("Foto kelas berhasil diperbarui di database!", "success");
   };
 
   const deleteClassPhoto = async (id) => {
@@ -715,11 +652,11 @@ export default function App() {
       await api.photos.delete(id);
     } catch (err) {
       console.warn(
-        "[Supabase] Tersimpan di lokal, akan sync saat online:",
+        "[Database MySQL] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
-    showToast("Foto kelas berhasil dihapus", "error");
+    showToast("Foto kelas berhasil dihapus dari database", "error");
   };
 
   const setHeroClassPhoto = async (id) => {
@@ -734,11 +671,11 @@ export default function App() {
       await api.photos.setHero(id);
     } catch (err) {
       console.warn(
-        "[Supabase] Tersimpan di lokal, akan sync saat online:",
+        "[Database MySQL] Tersimpan di lokal, akan sync saat online:",
         err.message,
       );
     }
-    showToast("Foto utama kelas berhasil diatur");
+    showToast("Foto utama hero berhasil diatur di database!", "success");
   };
 
   // â”€â”€â”€ CRUD: Mahasiswa / Member â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
