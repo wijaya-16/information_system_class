@@ -21,5 +21,5 @@ const storage = multer.diskStorage({
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // Batas upload 10MB
+  limits: { fileSize: 150 * 1024 * 1024 }, // Batas upload 150MB (mendukung foto & video perkuliahan)
 });

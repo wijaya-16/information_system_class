@@ -49,12 +49,15 @@ export function getFileUrl(path) {
 }
 
 // ─── 2. Helper Upload File ke Backend Multer ─────────────────────────────────
-export async function uploadFile(file) {
+export async function uploadFile(file, onProgress = null) {
   if (isStandaloneMode) {
     // Mode Standalone: fallback ke base64 data URL
     return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = (e) => resolve({ file_url: e.target.result });
+      reader.onload = (e) => {
+        if (onProgress) onProgress(100);
+        resolve({ file_url: e.target.result });
+      };
       reader.readAsDataURL(file);
     });
   }
@@ -65,6 +68,13 @@ export async function uploadFile(file) {
   const response = await axiosInstance.post("/upload", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
+    },
+    timeout: 300000, // 5 menit untuk upload video dan file media besar
+    onUploadProgress: (progressEvent) => {
+      if (onProgress && progressEvent.total) {
+        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        onProgress(percent);
+      }
     },
   });
 

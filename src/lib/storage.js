@@ -1,20 +1,20 @@
 import { uploadFile } from "./api";
 
 /**
- * Upload gambar untuk Gallery / Profil / Materi
+ * Upload gambar atau video untuk Gallery / Profil / Materi
  * Menggunakan backend MySQL server (/api/upload).
  * Jika backend sedang offline, fallback secara otomatis ke base64 DataURL (tetap tersimpan dan tampil).
  * 
- * @param {File} file - File gambar
+ * @param {File} file - File gambar atau video
  * @param {string} folder - Kategori (default: 'gallery')
  * @param {function} onProgress - Callback progress (0-100)
  * @returns {Promise<{ url: string, storagePath: string|null }>}
  */
 export async function uploadImage(file, folder = "gallery", onProgress = null) {
-  if (onProgress) onProgress(25);
+  if (onProgress) onProgress(20);
 
   try {
-    const res = await uploadFile(file);
+    const res = await uploadFile(file, onProgress);
     if (onProgress) onProgress(100);
     return {
       url: res.file_url,
@@ -33,11 +33,13 @@ export async function uploadImage(file, folder = "gallery", onProgress = null) {
           storagePath: null,
         });
       };
-      reader.onerror = () => reject(new Error("Gagal membaca file gambar"));
+      reader.onerror = () => reject(new Error("Gagal membaca file media"));
       reader.readAsDataURL(file);
     });
   }
 }
+
+export const uploadMedia = uploadImage;
 
 /**
  * Upload file dokumen/PDF

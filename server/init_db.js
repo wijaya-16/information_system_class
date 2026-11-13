@@ -260,12 +260,14 @@ async function init() {
       caption TEXT NULL,
       date VARCHAR(50) NULL,
       category VARCHAR(100) DEFAULT 'Praktikum & Perkuliahan',
+      type VARCHAR(20) DEFAULT 'image',
       is_hero BOOLEAN DEFAULT false,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB;
   `);
 
   try { await pool.query("ALTER TABLE class_photos MODIFY COLUMN url LONGTEXT NOT NULL"); } catch {}
+  try { await pool.query("ALTER TABLE class_photos ADD COLUMN type VARCHAR(20) DEFAULT 'image'"); } catch {}
   try { await pool.query("ALTER TABLE members_list MODIFY COLUMN photo LONGTEXT NULL"); } catch {}
   try { await pool.query("DELETE FROM class_photos WHERE url LIKE '%images.unsplash.com%'"); } catch {}
 

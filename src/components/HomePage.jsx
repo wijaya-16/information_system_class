@@ -1,6 +1,17 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import Icon from "./Icons";
 import Modal, { ConfirmDialog, FormField, inputCls, selectCls } from "./Modal";
+import { uploadImage } from "../lib/storage";
+
+const isVideoMedia = (item) => {
+    if (!item) return false;
+    if (item.type === 'video') return true;
+    if (typeof item.url === 'string') {
+        if (item.url.startsWith('data:video')) return true;
+        if (/\.(mp4|webm|mov|m4v|ogg|mkv|3gp)(\?.*)?$/i.test(item.url)) return true;
+    }
+    return false;
+};
 
 const getTodayDate = () => {
     const today = new Date();
@@ -527,19 +538,46 @@ export default function HomePage({
                         >
                             {currentHeroPhoto ? (
                                 <>
-                                    {/* Photo with Ken Burns effect */}
-                                    <img
-                                        src={currentHeroPhoto.url}
-                                        alt={currentHeroPhoto.title}
-                                        className="w-full h-full object-cover cursor-pointer hero-animate-photo"
-                                        style={{ animationPlayState: isHeroHovered ? 'paused' : 'running' }}
-                                        onClick={() => setSelectedPhoto(currentHeroPhoto)}
-                                    />
+                                    {/* Photo or Video with Ken Burns effect */}
+                                    {isVideoMedia(currentHeroPhoto) ? (
+                                        <div
+                                            className="relative w-full h-full cursor-pointer group/vid"
+                                            onClick={() => setSelectedPhoto(currentHeroPhoto)}
+                                        >
+                                            <video
+                                                src={currentHeroPhoto.url}
+                                                autoPlay
+                                                loop
+                                                muted
+                                                playsInline
+                                                className="w-full h-full object-cover"
+                                            />
+                                            {/* Center play icon overlay */}
+                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-rose-600 via-rose-500 to-amber-500 text-white flex items-center justify-center shadow-xl shadow-rose-600/40 backdrop-blur-md border border-white/30 group-hover/vid:scale-110 transition-transform">
+                                                    <Icon name="play" className="w-7 h-7 ml-0.5 fill-white" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <img
+                                            src={currentHeroPhoto.url}
+                                            alt={currentHeroPhoto.title}
+                                            className="w-full h-full object-cover cursor-pointer hero-animate-photo"
+                                            style={{ animationPlayState: isHeroHovered ? 'paused' : 'running' }}
+                                            onClick={() => setSelectedPhoto(currentHeroPhoto)}
+                                        />
+                                    )}
 
                                     {/* Top Controls Overlay */}
                                     <div className="absolute inset-x-0 top-0 p-4 bg-gradient-to-b from-slate-950/80 via-slate-950/30 to-transparent flex items-center justify-between z-10 pointer-events-none">
                                         <span className="hero-animate-badge-pop inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950/70 backdrop-blur-xl text-xs font-bold border border-white/10 shadow-lg pointer-events-auto">
-                                            {currentHeroPhoto.isHero ? (
+                                            {isVideoMedia(currentHeroPhoto) ? (
+                                                <>
+                                                    <Icon name="video" className="w-3.5 h-3.5 text-rose-400" />
+                                                    <span className="text-rose-300">Video Hero</span>
+                                                </>
+                                            ) : currentHeroPhoto.isHero ? (
                                                 <>
                                                     <Icon name="star" className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                                                     <span className="text-amber-300">Momen Pilihan</span>
@@ -705,14 +743,21 @@ export default function HomePage({
                                         <button
                                             key={p.id || idx}
                                             onClick={() => setHeroActiveIndex(idx)}
-                                            className={`w-12 h-9 sm:w-14 sm:h-10 rounded-xl overflow-hidden border-2 transition-all duration-300 shadow-md shrink-0 ${
+                                            className={`w-12 h-9 sm:w-14 sm:h-10 rounded-xl overflow-hidden border-2 transition-all duration-300 shadow-md shrink-0 relative ${
                                                 idx === heroActiveIndex
                                                     ? 'border-blue-400 ring-2 ring-blue-400/30 scale-105'
                                                     : 'border-white/10 hover:border-white/30 opacity-60 hover:opacity-100'
                                             }`}
-                                            title={p.title || `Foto ${idx + 1}`}
+                                            title={p.title || `Media ${idx + 1}`}
                                         >
-                                            <img src={p.url} alt="" className="w-full h-full object-cover" />
+                                            {isVideoMedia(p) ? (
+                                                <div className="w-full h-full relative bg-slate-950 flex items-center justify-center">
+                                                    <video src={p.url} className="w-full h-full object-cover opacity-70" preload="metadata" muted />
+                                                    <Icon name="play" className="w-3 h-3 text-white absolute fill-white" />
+                                                </div>
+                                            ) : (
+                                                <img src={p.url} alt="" className="w-full h-full object-cover" />
+                                            )}
                                         </button>
                                     ))}
                                     {heroPhotosList.length > 5 && (
@@ -1246,25 +1291,47 @@ export default function HomePage({
                                 className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col"
                             >
                                 <div
-                                    className="relative aspect-[16/10] overflow-hidden bg-slate-100 cursor-pointer"
+                                    className="relative aspect-[16/10] overflow-hidden bg-slate-950 cursor-pointer"
                                     onClick={() => setSelectedPhoto(photo)}
                                 >
-                                    <img
-                                        src={photo.url}
-                                        alt={photo.title}
-                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                        loading="lazy"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                                    {isVideoMedia(photo) ? (
+                                        <div className="relative w-full h-full">
+                                            <video
+                                                src={photo.url}
+                                                preload="metadata"
+                                                muted
+                                                playsInline
+                                                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                                            />
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-600 to-amber-500 text-white flex items-center justify-center shadow-lg shadow-rose-600/40 group-hover:scale-110 transition-transform">
+                                                    <Icon name="play" className="w-6 h-6 ml-0.5 fill-white" />
+                                                </div>
+                                            </div>
+                                            <span className="absolute top-3 left-3 px-2.5 py-0.5 rounded-lg bg-gradient-to-r from-rose-600 to-red-600 text-white text-[10px] font-bold shadow flex items-center gap-1 border border-white/20">
+                                                <Icon name="video" className="w-3 h-3" /> Video
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <img
+                                                src={photo.url}
+                                                alt={photo.title}
+                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                loading="lazy"
+                                            />
+                                            {photo.isHero && (
+                                                <span className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold shadow flex items-center gap-1">
+                                                    <Icon name="star" className="w-3 h-3 fill-white" /> Foto Hero
+                                                </span>
+                                            )}
+                                        </>
+                                    )}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4 pointer-events-none">
                                         <span className="px-3 py-1 rounded-lg bg-white/95 text-slate-900 text-xs font-bold shadow flex items-center gap-1">
-                                            <Icon name="maximize-2" className="w-3 h-3" /> Lihat Penuh
+                                            <Icon name={isVideoMedia(photo) ? 'play' : 'maximize-2'} className="w-3 h-3" /> {isVideoMedia(photo) ? 'Putar Video' : 'Lihat Penuh'}
                                         </span>
                                     </div>
-                                    {photo.isHero && (
-                                        <span className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold shadow flex items-center gap-1">
-                                            <Icon name="star" className="w-3 h-3 fill-white" /> Foto Hero
-                                        </span>
-                                    )}
                                 </div>
 
                                 <div className="p-4 flex-1 flex flex-col justify-between">

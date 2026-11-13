@@ -5,6 +5,7 @@ export const getPhotos = async (req, res) => {
     const [rows] = await pool.query("SELECT * FROM class_photos ORDER BY id DESC");
     const photos = rows.map(r => ({
       ...r,
+      type: r.type || (r.url && (r.url.startsWith('data:video') || /\.(mp4|webm|mov|m4v|ogg)(\?.*)?$/i.test(r.url)) ? 'video' : 'image'),
       isHero: !!r.is_hero,
     }));
     res.json(photos);
@@ -17,8 +18,9 @@ export const getPhotos = async (req, res) => {
 };
 
 export const createPhoto = async (req, res) => {
-  const { id, url, title, caption, date, category, isHero } = req.body;
+  const { id, url, title, caption, date, category, isHero, type } = req.body;
   const photoId = id || Date.now();
+  const mediaType = type || (url && (url.startsWith('data:video') || /\.(mp4|webm|mov|m4v|ogg)(\?.*)?$/i.test(url)) ? 'video' : 'image');
 
   try {
     if (isHero) {
@@ -26,9 +28,9 @@ export const createPhoto = async (req, res) => {
     }
 
     await pool.query(
-      `INSERT INTO class_photos (id, url, title, caption, date, category, is_hero) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE title=VALUES(title), url=VALUES(url), caption=VALUES(caption), category=VALUES(category), date=VALUES(date), is_hero=VALUES(is_hero)`,
+      `INSERT INTO class_photos (id, url, title, caption, date, category, is_hero, type) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE title=VALUES(title), url=VALUES(url), caption=VALUES(caption), category=VALUES(category), date=VALUES(date), is_hero=VALUES(is_hero), type=VALUES(type)`,
       [
         photoId,
         url,
@@ -37,24 +39,26 @@ export const createPhoto = async (req, res) => {
         date || new Date().toISOString().split("T")[0],
         category || "Praktikum & Perkuliahan",
         isHero ? 1 : 0,
+        mediaType,
       ]
     );
 
     res.status(201).json({
-      message: "Foto berhasil ditambahkan",
+      message: "Media berhasil ditambahkan",
       id: photoId,
       url,
       title,
+      type: mediaType,
       isHero: !!isHero,
     });
   } catch (error) {
-    res.status(500).json({ message: "Gagal menambahkan foto", error: error.message });
+    res.status(500).json({ message: "Gagal menambahkan foto / video", error: error.message });
   }
 };
 
 export const updatePhoto = async (req, res) => {
   const { id } = req.params;
-  const { url, title, caption, date, category, isHero } = req.body;
+  const { url, title, caption, date, category, isHero, type } = req.body;
 
   try {
     if (isHero) {
@@ -68,9 +72,10 @@ export const updatePhoto = async (req, res) => {
            caption = COALESCE(?, caption),
            date = COALESCE(?, date),
            category = COALESCE(?, category),
-           is_hero = COALESCE(?, is_hero)
+           is_hero = COALESCE(?, is_hero),
+           type = COALESCE(?, type)
        WHERE id = ?`,
-      [url, title, caption, date, category, isHero !== undefined ? (isHero ? 1 : 0) : null, id]
+      [url, title, caption, date, category, isHero !== undefined ? (isHero ? 1 : 0) : null, type, id]
     );
 
     if (result.affectedRows === 0) {

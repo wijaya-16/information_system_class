@@ -15,11 +15,16 @@ import submissionRoutes from "./routes/submissionRoutes.js";
 import { upload } from "./middleware/upLoadMiddleware.js";
 import pool from "./config/db.js";
 
-// Pastikan tipe kolom url di galeri dan photo di members dapat menampung data gambar
+// Pastikan tipe kolom url di galeri dan photo di members dapat menampung data gambar & video
 (async () => {
   try {
     await pool.query("ALTER TABLE class_photos MODIFY COLUMN url LONGTEXT NOT NULL");
     await pool.query("ALTER TABLE members_list MODIFY COLUMN photo LONGTEXT NULL");
+    try {
+      await pool.query("ALTER TABLE class_photos ADD COLUMN type VARCHAR(20) DEFAULT 'image'");
+    } catch {
+      // Abaikan jika kolom type sudah ada
+    }
     // Bersihkan foto profil member agar galeri murni berisi kegiatan kelas
     await pool.query("DELETE FROM class_photos WHERE title LIKE 'Foto Profil%'");
     // Bersihkan foto mock manual unsplash agar tabel murni berisi foto hasil upload admin
@@ -37,8 +42,8 @@ dotenv.config({ path: path.resolve(__dirname, "./.env") });
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use(express.json({ limit: "150mb" }));
+app.use(express.urlencoded({ extended: true, limit: "150mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Health check endpoint
