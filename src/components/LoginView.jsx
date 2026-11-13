@@ -155,7 +155,7 @@ export default function LoginView({ onLoginSuccess }) {
                 onClick={() => handleQuickFill("25SI025")}
                 className="font-mono font-bold text-blue-600 hover:underline"
               >
-                25SI025
+                25SI...
               </button>{" "}
               atau{" "}
               <button
@@ -163,11 +163,11 @@ export default function LoginView({ onLoginSuccess }) {
                 onClick={() => handleQuickFill("25SI001")}
                 className="font-mono font-bold text-blue-600 hover:underline"
               >
-                25SI001
+                25SI...
               </button>
-              ) dengan password sama dengan NIM.
+              ) dengan password sama dengan NIM anda.
             </p>
-            <p className="leading-relaxed">
+            {/* <p className="leading-relaxed">
               • <strong>Admin:</strong> Username:{" "}
               <button
                 type="button"
@@ -184,7 +184,7 @@ export default function LoginView({ onLoginSuccess }) {
               <span className="font-mono font-bold text-slate-800">
                 admin123
               </span>
-            </p>
+            </p> */}
           </div>
         </div>
 
