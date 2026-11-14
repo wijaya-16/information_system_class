@@ -602,7 +602,7 @@ export default function App() {
     showToast("Pengumuman berhasil dihapus", "error");
   };
 
-  // ─── CRUD: Foto Kelas (Khusus Hak Akses Admin & Tersimpan di Database) ──────
+  // ─── CRUD: Foto & Video Kenangan Kelas (Khusus Hak Akses Admin & Tersimpan di Database) ──────
   const addClassPhoto = async (photoData) => {
     const newPhoto = { ...photoData, id: nextId() };
     setData((d) => {
@@ -620,7 +620,8 @@ export default function App() {
         err.message,
       );
     }
-    showToast("Foto kelas berhasil diunggah & tersimpan di database!", "success");
+    const isVid = photoData.type === 'video' || (photoData.url && (photoData.url.startsWith('data:video') || /\.(mp4|webm|mov|m4v|ogg|mkv)(\?.*)?$/i.test(photoData.url)));
+    showToast(isVid ? "Video kenangan berhasil diunggah & tersimpan di database!" : "Foto kenangan berhasil diunggah & tersimpan di database!", "success");
   };
 
   const updateClassPhoto = async (id, photoData) => {
@@ -640,7 +641,7 @@ export default function App() {
         err.message,
       );
     }
-    showToast("Foto kelas berhasil diperbarui di database!", "success");
+    showToast("Kenangan kelas berhasil diperbarui di database!", "success");
   };
 
   const deleteClassPhoto = async (id) => {
@@ -656,7 +657,7 @@ export default function App() {
         err.message,
       );
     }
-    showToast("Foto kelas berhasil dihapus dari database", "error");
+    showToast("Kenangan kelas telah dihapus dari database", "error");
   };
 
   const setHeroClassPhoto = async (id) => {

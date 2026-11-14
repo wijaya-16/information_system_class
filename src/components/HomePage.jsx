@@ -182,13 +182,30 @@ export default function HomePage({
 
     const fileInputRef = useRef(null);
 
-    // Kompresi otomatis file gambar
-    const handleFileUpload = (e) => {
+    // Kompresi otomatis file gambar atau upload video
+    const handleFileUpload = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        if (file.type.startsWith('video/')) {
+            try {
+                if (showToast) showToast('Sedang memproses video...', 'info');
+                const res = await uploadImage(file, 'gallery');
+                setPhotoForm(f => ({
+                    ...f,
+                    url: res.url,
+                    type: 'video',
+                    title: f.title || file.name.replace(/\.[^/.]+$/, ''),
+                }));
+                if (showToast) showToast('Video siap disimpan ke database!', 'success');
+            } catch (err) {
+                if (showToast) showToast('Gagal memuat video: ' + err.message, 'error');
+            }
+            return;
+        }
+
         if (!file.type.startsWith('image/')) {
-            if (showToast) showToast('Silakan pilih file gambar (JPG, PNG, WebP)', 'error');
+            if (showToast) showToast('Silakan pilih file gambar atau video', 'error');
             return;
         }
 
@@ -223,6 +240,7 @@ export default function HomePage({
                 setPhotoForm(f => ({
                     ...f,
                     url: compressedUrl,
+                    type: 'image',
                     title: f.title || file.name.replace(/\.[^/.]+$/, ''),
                 }));
             };
@@ -1401,11 +1419,21 @@ export default function HomePage({
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="relative bg-slate-950 flex items-center justify-center max-h-[60vh] overflow-hidden">
-                            <img
-                                src={selectedPhoto.url}
-                                alt={selectedPhoto.title}
-                                className="w-full h-full object-contain max-h-[60vh]"
-                            />
+                            {isVideoMedia(selectedPhoto) ? (
+                                <video
+                                    src={selectedPhoto.url}
+                                    controls
+                                    autoPlay
+                                    playsInline
+                                    className="w-full h-full object-contain max-h-[60vh] bg-black"
+                                />
+                            ) : (
+                                <img
+                                    src={selectedPhoto.url}
+                                    alt={selectedPhoto.title}
+                                    className="w-full h-full object-contain max-h-[60vh]"
+                                />
+                            )}
                             <button
                                 onClick={() => setSelectedPhoto(null)}
                                 className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition"
@@ -1442,7 +1470,7 @@ export default function HomePage({
                         <input
                             ref={fileInputRef}
                             type="file"
-                            accept="image/*"
+                            accept="image/*,video/*"
                             className="hidden"
                             onChange={handleFileUpload}
                         />
@@ -1458,25 +1486,33 @@ export default function HomePage({
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-sm font-bold text-slate-800">
-                                        Ketuk atau Klik untuk Memilih Foto
+                                        Ketuk atau Klik untuk Memilih Foto atau Video
                                     </p>
                                     <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                                        Pilih foto dari Laptop/PC atau Galeri & Kamera HP (JPG, PNG, WebP). Foto otomatis dioptimasi untuk database.
+                                        Pilih foto (JPG, PNG) atau video (MP4, WebM, MOV) dari Laptop/PC atau HP. Otomatis disimpan ke database.
                                     </p>
                                 </div>
                                 <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/25 transition">
-                                    <Icon name="image-plus" className="w-3.5 h-3.5" />
-                                    Pilih Gambar dari Perangkat
+                                    <Icon name="upload" className="w-3.5 h-3.5" />
+                                    Pilih Media dari Perangkat
                                 </span>
                             </div>
                         ) : (
                             <div className="space-y-2">
                                 <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-900 shadow-md group">
-                                    <img
-                                        src={photoForm.url}
-                                        alt="Preview"
-                                        className="h-full w-full object-cover"
-                                    />
+                                    {isVideoMedia(photoForm) ? (
+                                        <video
+                                            src={photoForm.url}
+                                            controls
+                                            className="h-full w-full object-contain bg-black"
+                                        />
+                                    ) : (
+                                        <img
+                                            src={photoForm.url}
+                                            alt="Preview"
+                                            className="h-full w-full object-cover"
+                                        />
+                                    )}
                                     <div className="absolute inset-0 bg-slate-950/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4">
                                         <button
                                             type="button"
