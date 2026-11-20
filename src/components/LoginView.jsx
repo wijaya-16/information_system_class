@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { loginUser } from "../lib/api";
 import Icon from "./Icons";
+import ThemeSwitcher from "./ThemeSwitcher";
 
 export default function LoginView({ onLoginSuccess }) {
   const [identifier, setIdentifier] = useState("");
@@ -34,7 +35,7 @@ export default function LoginView({ onLoginSuccess }) {
 
       if (message.includes("Network Error") || message.includes("ERR_NETWORK")) {
         message =
-          "Tidak dapat terhubung ke server backend. Gunakan NIM Anda (contoh: 25SI025) dan password sama dengan NIM untuk masuk ke mode kelas.";
+          "Tidak dapat terhubung ke server backend. Menggunakan verifikasi database lokal kelas. Pastikan NIM Anda terdaftar (contoh: 25SI025).";
       }
 
       setError(message);
@@ -60,25 +61,38 @@ export default function LoginView({ onLoginSuccess }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-200 p-6 sm:p-8">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Ambient Animated Mesh Orbs & Grid */}
+      <div className="theme-ambient-container">
+        <div className="theme-ambient-orb-1" />
+        <div className="theme-ambient-orb-2" />
+        <div className="theme-ambient-orb-3" />
+        <div className="theme-grid-overlay" />
+      </div>
+
+      {/* Floating Theme Switcher at Top Right */}
+      <div className="absolute top-5 right-5 z-20">
+        <ThemeSwitcher />
+      </div>
+
+      <div className="max-w-md w-full rounded-3xl shadow-2xl border border-white/10 p-6 sm:p-8 relative z-10 backdrop-blur-2xl transition-all">
         <div className="text-center mb-6">
-          <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md">
+          <div className="w-14 h-14 bg-gradient-to-tr from-blue-600 via-cyan-500 to-indigo-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-blue-500/25 ring-1 ring-white/20">
             <Icon name="book-open" className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-black text-slate-900">
+          <h1 className="text-2xl font-black text-white tracking-tight">
             Portal Kelas SI
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-400 mt-1">
             Masuk untuk mengakses materi, tugas & galeri perkuliahan
           </p>
         </div>
 
         {error && (
-          <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2.5 animate-fade-in">
+          <div className="mb-5 p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-start gap-2.5 animate-fade-in">
             <Icon
               name="alert-circle"
-              className="w-4 h-4 shrink-0 text-red-500 mt-0.5"
+              className="w-4 h-4 shrink-0 text-red-400 mt-0.5"
             />
             <span className="leading-relaxed">{error}</span>
           </div>
@@ -86,7 +100,7 @@ export default function LoginView({ onLoginSuccess }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            <label className="block text-xs font-bold text-slate-300 mb-1.5">
               NIM / Email / Username
             </label>
             <div className="relative">
@@ -100,13 +114,13 @@ export default function LoginView({ onLoginSuccess }) {
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder="Masukkan NIM (cth: 25SI025) atau Username"
                 disabled={loading}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 transition bg-slate-50 focus:bg-white"
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-white/15 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 transition bg-white/5 focus:bg-white/10 text-white placeholder-slate-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            <label className="block text-xs font-bold text-slate-300 mb-1.5">
               Password
             </label>
             <div className="relative">
@@ -120,7 +134,7 @@ export default function LoginView({ onLoginSuccess }) {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Masukkan Password (default: sama dengan NIM)"
                 disabled={loading}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 transition bg-slate-50 focus:bg-white"
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-white/15 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 transition bg-white/5 focus:bg-white/10 text-white placeholder-slate-500"
               />
             </div>
           </div>
@@ -128,7 +142,7 @@ export default function LoginView({ onLoginSuccess }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 py-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-sm"
+            className="w-full mt-2 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 active:scale-95 border border-white/10"
           >
             {loading ? (
               <>
@@ -142,27 +156,25 @@ export default function LoginView({ onLoginSuccess }) {
         </form>
 
         {/* Panduan Akun Bantuan */}
-        <div className="mt-6 pt-4 border-t border-slate-100 space-y-2">
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1.5">
-            <p className="font-bold text-slate-800 flex items-center gap-1.5">
-              <Icon name="info" className="w-3.5 h-3.5 text-blue-600" />
-              Petunjuk Masuk Akun:
+        <div className="mt-6 pt-4 border-t border-white/10 space-y-2">
+          <div className="p-3 bg-white/5 rounded-2xl border border-white/10 text-[11px] text-slate-400 space-y-2">
+            <p className="font-bold text-white flex items-center gap-1.5">
+              <Icon name="shield-check" className="w-3.5 h-3.5 text-cyan-400" />
+              Ketentuan Hak Akses Sistem:
             </p>
             <p className="leading-relaxed">
-              • <strong>Mahasiswa:</strong> Gunakan NIM Anda (contoh:{" "}
+              • <strong>Mahasiswa Terdaftar:</strong> Masuk dengan NIM Anda (contoh:{" "}
               <button
                 type="button"
                 onClick={() => handleQuickFill("25SI025")}
-                className="font-mono font-bold text-blue-600 hover:underline"
+                className="font-mono font-bold text-cyan-400 hover:underline"
               >
-                25SI...
-              </button>{" "}
-              
-             
-              ) dengan password sama dengan NIM anda.
+                25SI025
+              </button>
+              ) dan password sama dengan NIM.
             </p>
-            {/* <p className="leading-relaxed">
-              • <strong>Admin:</strong> Username:{" "}
+            <p className="leading-relaxed">
+              • <strong>Administrator Terdaftar:</strong> Masuk dengan akun administrator (Username:{" "}
               <button
                 type="button"
                 onClick={() => {
@@ -170,19 +182,19 @@ export default function LoginView({ onLoginSuccess }) {
                   setPassword("admin123");
                   setError("");
                 }}
-                className="font-mono font-bold text-slate-800 hover:underline"
+                className="font-mono font-bold text-amber-400 hover:underline"
               >
                 admin
-              </button>{" "}
-              dan Password:{" "}
-              <span className="font-mono font-bold text-slate-800">
-                admin123
-              </span>
-            </p> */}
+              </button>
+              ).
+            </p>
+            <p className="text-[10px] text-slate-500 italic pt-1 border-t border-white/5">
+              * Hanya mahasiswa terdaftar dan administrator resmi yang diizinkan mengakses portal ini.
+            </p>
           </div>
         </div>
 
-        <p className="text-center text-[11px] text-slate-400 mt-5">
+        <p className="text-center text-[11px] text-slate-500 mt-5">
           Sistem Informasi Kelas &copy; 2026
         </p>
       </div>

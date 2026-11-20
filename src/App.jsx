@@ -14,7 +14,8 @@ import ProfilePage from "./components/ProfilePage";
 import MembersPage from "./components/MembersPage";
 import Footer from "./components/Footer";
 import Toast from "./components/Toast";
-import { CLASS_MEMBERS } from "./data/classMembers";
+import { CLASS_MEMBERS, getMemberByNim } from "./data/classMembers";
+import { ThemeProvider } from "./context/ThemeContext";
 
 // â”€â”€â”€ Supabase API Layer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 import { api, fetchAllData, checkServerHealth } from "./lib/api";
@@ -251,20 +252,68 @@ const INITIAL_DATABASE = {
   ],
 };
 
-export default function App() {
+function AppContent() {
   const [user, setUser] = useState(() => {
     const savedToken = localStorage.getItem("si_token");
     const savedUser = localStorage.getItem("si_user");
     if (savedToken && savedUser) {
       try {
         const parsed = JSON.parse(savedUser);
-        if (parsed && parsed.role) return parsed;
+        if (parsed && parsed.role) {
+          // 1. Validasi Administrator resmi
+          if (
+            parsed.role === "admin" &&
+            (parsed.username?.toLowerCase() === "admin" ||
+              parsed.nim?.toUpperCase() === "ADMIN" ||
+              parsed.code?.toLowerCase() === "admin" ||
+              parsed.email?.toLowerCase() === "admin@kelas.ac.id")
+          ) {
+            return parsed;
+          }
+
+          // 2. Validasi Mahasiswa terdaftar
+          const checkNim = parsed.nim || parsed.username || parsed.code;
+          if (checkNim) {
+            let customMembers = CLASS_MEMBERS;
+            try {
+              const savedDb = localStorage.getItem(STORAGE_KEY);
+              if (savedDb) {
+                const parsedDb = JSON.parse(savedDb);
+                if (parsedDb.members) {
+                  customMembers = { ...CLASS_MEMBERS, ...parsedDb.members };
+                }
+              }
+            } catch {}
+
+            const registered = getMemberByNim(checkNim, customMembers);
+            if (registered) {
+              return {
+                ...registered,
+                ...parsed,
+                role: "student", // Kunci role agar tidak bisa dimanipulasi
+              };
+            }
+          }
+        }
       } catch {
         /* ignore error */
       }
+      // Hapus session jika data tidak terdaftar di sistem!
+      localStorage.removeItem("si_token");
+      localStorage.removeItem("si_user");
     }
     return null;
   });
+
+  // Verifikasi status hak akses Administrator secara ketat
+  const isAdmin = Boolean(
+    user &&
+      user.role === "admin" &&
+      (user.username?.toLowerCase() === "admin" ||
+        user.nim?.toUpperCase() === "ADMIN" ||
+        user.code?.toLowerCase() === "admin" ||
+        user.email?.toLowerCase() === "admin@kelas.ac.id")
+  );
 
   const [activePage, setActivePage] = useState("beranda");
   const [pageParams, setPageParams] = useState({});
@@ -383,6 +432,10 @@ export default function App() {
 
   // â”€â”€â”€ CRUD: Mata Kuliah â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const addCourse = async (courseData) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak menambah mata kuliah.", "error");
+      return;
+    }
     const newItem = { ...courseData, id: nextId() };
     setData((d) => ({ ...d, courses: [...(d.courses || []), newItem] }));
     try {
@@ -397,6 +450,10 @@ export default function App() {
   };
 
   const updateCourse = async (id, courseData) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak memperbarui mata kuliah.", "error");
+      return;
+    }
     const oldName = data.courses.find((c) => c.id === id)?.name;
     setData((d) => ({
       ...d,
@@ -434,6 +491,10 @@ export default function App() {
   };
 
   const deleteCourse = async (id) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak menghapus mata kuliah.", "error");
+      return;
+    }
     const courseName = data.courses.find((c) => c.id === id)?.name;
     setData((d) => ({
       ...d,
@@ -455,6 +516,10 @@ export default function App() {
 
   // â”€â”€â”€ CRUD: Materi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const addMaterial = async (mat) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak menambah materi.", "error");
+      return;
+    }
     const newItem = { ...mat, id: nextId() };
     setData((d) => ({ ...d, materials: [...(d.materials || []), newItem] }));
     try {
@@ -469,6 +534,10 @@ export default function App() {
   };
 
   const updateMaterial = async (id, mat) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak memperbarui materi.", "error");
+      return;
+    }
     setData((d) => ({
       ...d,
       materials: d.materials.map((m) => (m.id === id ? { ...m, ...mat } : m)),
@@ -485,6 +554,10 @@ export default function App() {
   };
 
   const deleteMaterial = async (id) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak menghapus materi.", "error");
+      return;
+    }
     setData((d) => ({
       ...d,
       materials: d.materials.filter((m) => m.id !== id),
@@ -502,6 +575,10 @@ export default function App() {
 
   // â”€â”€â”€ CRUD: Tugas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const addAssignment = async (a) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak membuat tugas.", "error");
+      return;
+    }
     const newItem = { ...a, id: nextId() };
     setData((d) => ({
       ...d,
@@ -519,6 +596,10 @@ export default function App() {
   };
 
   const updateAssignment = async (id, a) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak memperbarui tugas.", "error");
+      return;
+    }
     setData((d) => ({
       ...d,
       assignments: d.assignments.map((x) => (x.id === id ? { ...x, ...a } : x)),
@@ -535,6 +616,10 @@ export default function App() {
   };
 
   const deleteAssignment = async (id) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak menghapus tugas.", "error");
+      return;
+    }
     setData((d) => ({
       ...d,
       assignments: d.assignments.filter((x) => x.id !== id),
@@ -552,6 +637,10 @@ export default function App() {
 
   // â”€â”€â”€ CRUD: Pengumuman â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const addAnnouncement = async (a) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak membuat pengumuman.", "error");
+      return;
+    }
     const newItem = { ...a, id: nextId() };
     setData((d) => ({
       ...d,
@@ -569,6 +658,10 @@ export default function App() {
   };
 
   const updateAnnouncement = async (id, a) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak memperbarui pengumuman.", "error");
+      return;
+    }
     setData((d) => ({
       ...d,
       announcements: d.announcements.map((x) =>
@@ -587,6 +680,10 @@ export default function App() {
   };
 
   const deleteAnnouncement = async (id) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak menghapus pengumuman.", "error");
+      return;
+    }
     setData((d) => ({
       ...d,
       announcements: d.announcements.filter((x) => x.id !== id),
@@ -604,6 +701,10 @@ export default function App() {
 
   // ─── CRUD: Foto & Video Kenangan Kelas (Khusus Hak Akses Admin & Tersimpan di Database) ──────
   const addClassPhoto = async (photoData) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak mengunggah dokumentasi kelas.", "error");
+      return;
+    }
     const newPhoto = { ...photoData, id: nextId() };
     setData((d) => {
       const photos = d.classPhotos || [];
@@ -625,6 +726,10 @@ export default function App() {
   };
 
   const updateClassPhoto = async (id, photoData) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak memperbarui dokumentasi kelas.", "error");
+      return;
+    }
     setData((d) => ({
       ...d,
       classPhotos: (d.classPhotos || []).map((p) => {
@@ -645,6 +750,10 @@ export default function App() {
   };
 
   const deleteClassPhoto = async (id) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak menghapus dokumentasi kelas.", "error");
+      return;
+    }
     setData((d) => ({
       ...d,
       classPhotos: (d.classPhotos || []).filter((p) => p.id !== id),
@@ -661,6 +770,10 @@ export default function App() {
   };
 
   const setHeroClassPhoto = async (id) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak mengatur foto utama hero.", "error");
+      return;
+    }
     setData((d) => ({
       ...d,
       classPhotos: (d.classPhotos || []).map((p) => ({
@@ -679,8 +792,11 @@ export default function App() {
     showToast("Foto utama hero berhasil diatur di database!", "success");
   };
 
-  // â”€â”€â”€ CRUD: Mahasiswa / Member â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const addMember = async (code, memberData) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak menambah mahasiswa.", "error");
+      return;
+    }
     setData((d) => ({
       ...d,
       members: { ...(d.members || CLASS_MEMBERS), [code]: memberData },
@@ -697,6 +813,16 @@ export default function App() {
   };
 
   const updateMember = async (oldCode, newCode, memberData) => {
+    const isSelf = Boolean(user && (user.code === oldCode || user.nim === `25SI${oldCode}`));
+    if (!isAdmin && !isSelf) {
+      showToast("Akses ditolak: Anda tidak memiliki izin untuk mengubah data mahasiswa lain.", "error");
+      return;
+    }
+    if (!isAdmin && oldCode !== newCode) {
+      showToast("Akses ditolak: Mahasiswa tidak dapat mengubah NIM.", "error");
+      return;
+    }
+
     setData((d) => {
       const updated = { ...(d.members || CLASS_MEMBERS) };
       if (oldCode !== newCode) delete updated[oldCode];
@@ -729,6 +855,10 @@ export default function App() {
   };
 
   const deleteMember = async (code) => {
+    if (!isAdmin) {
+      showToast("Akses ditolak: Hanya Administrator yang berhak menghapus mahasiswa.", "error");
+      return;
+    }
     setData((d) => {
       const updated = { ...(d.members || CLASS_MEMBERS) };
       delete updated[code];
@@ -747,12 +877,20 @@ export default function App() {
 
   // â”€â”€â”€ Pengumpulan Tugas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const submitAssignment = async (assignmentId, subData) => {
-    const studentNim = user?.nim || user?.username || "25SI001";
+    if (!user) {
+      showToast("Silakan masuk terlebih dahulu untuk mengumpulkan tugas.", "error");
+      return;
+    }
+    if (isAdmin) {
+      showToast("Akun Administrator tidak dapat mengumpulkan tugas mahasiswa.", "info");
+      return;
+    }
+    const studentNim = user.nim || user.username || "25SI001";
     const newSub = {
       id: nextId(),
       assignmentId,
       nim: studentNim,
-      studentName: user?.fullname || "Mahasiswa",
+      studentName: user.fullname || "Mahasiswa",
       submittedAt: new Date().toISOString().split("T")[0],
       ...subData,
     };
@@ -844,10 +982,10 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // â”€â”€â”€ Halaman Login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Halaman Login ───────────────────────────────────────────────────────────
   if (!user) {
     return (
-      <>
+      <div className="min-h-screen flex flex-col relative overflow-x-hidden transition-colors duration-300">
         <LoginView onLoginSuccess={handleLoginSuccess} />
         {toast && (
           <Toast
@@ -856,11 +994,11 @@ export default function App() {
             onClose={() => setToast(null)}
           />
         )}
-      </>
+      </div>
     );
   }
 
-  // â”€â”€â”€ Halaman Utama â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Halaman Utama ───────────────────────────────────────────────────────────
   const knownPages = [
     "beranda",
     "galeri",
@@ -873,15 +1011,23 @@ export default function App() {
     "mahasiswa",
     "profile",
   ];
-  const isAdmin = user.role === "admin";
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
-      <Navbar
-        activePage={activePage}
-        navigateTo={navigateTo}
-        user={user}
-        onLogout={handleLogout}
+    <div className="min-h-screen flex flex-col relative overflow-x-hidden transition-colors duration-300">
+      {/* Ambient Animated Theme Mesh Orbs & Grid */}
+      <div className="theme-ambient-container">
+        <div className="theme-ambient-orb-1" />
+        <div className="theme-ambient-orb-2" />
+        <div className="theme-ambient-orb-3" />
+        <div className="theme-grid-overlay" />
+      </div>
+
+      <div className="relative z-10 flex-1 flex flex-col">
+        <Navbar
+          activePage={activePage}
+          navigateTo={navigateTo}
+          user={user}
+          onLogout={handleLogout}
         dbConnected={dbConnected}
       />
 
@@ -1021,8 +1167,9 @@ export default function App() {
         )}
       </main>
 
-      <Footer navigateTo={navigateTo} />
-      <BottomNavigation activePage={activePage} navigateTo={navigateTo} />
+        <Footer navigateTo={navigateTo} />
+        <BottomNavigation activePage={activePage} navigateTo={navigateTo} />
+      </div>
 
       {toast && (
         <Toast
@@ -1032,6 +1179,14 @@ export default function App() {
         />
       )}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 

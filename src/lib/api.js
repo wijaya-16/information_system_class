@@ -142,28 +142,36 @@ export async function fetchAllData() {
   }
 }
 
-// ─── 4. Autentikasi Cerdas Mandiri (Fallback Offline / Vercel Standalone) ───────
+// ─── 4. Autentikasi Cerdas Mandiri (Validasi Ketat Member & Admin Terdaftar) ───
 export function authenticateOffline({ identifier, password }) {
   const idClean = (identifier || "").trim();
   const passClean = (password || "").trim();
 
-  if (!idClean || !passClean) return null;
+  if (!idClean || !passClean) {
+    throw new Error("NIM / Username dan Password wajib diisi.");
+  }
 
-  // 1. Cek Kredensial Administrator
-  if (
-    idClean.toLowerCase() === "admin" &&
-    (passClean === "admin123" || passClean === "admin")
-  ) {
-    return {
-      id: "admin",
-      code: "ADMIN",
-      nim: "ADMIN",
-      username: "admin",
-      fullname: "Administrator Kelas",
-      email: "admin@kelas.ac.id",
-      role: "admin",
-      status: "Aktif",
-    };
+  // 1. Cek Kredensial Administrator Terdaftar
+  const isAdminId =
+    idClean.toLowerCase() === "admin" ||
+    idClean.toLowerCase() === "administrator";
+
+  if (isAdminId) {
+    // Password Administrator resmi: 'admin123'
+    if (passClean === "admin123") {
+      return {
+        id: "admin",
+        code: "ADMIN",
+        nim: "ADMIN",
+        username: "admin",
+        fullname: "Administrator Kelas",
+        email: "admin@kelas.ac.id",
+        role: "admin",
+        status: "Aktif",
+      };
+    } else {
+      throw new Error("Password Administrator salah. Akses ditolak.");
+    }
   }
 
   // 2. Cek Kredensial Mahasiswa dari data lokal / CLASS_MEMBERS
@@ -181,54 +189,55 @@ export function authenticateOffline({ identifier, password }) {
   }
 
   const member = getMemberByNim(idClean, customMembers);
-  if (member) {
-    // Kriteria kecocokan password mahasiswa yang fleksibel:
-    // a. Sama dengan NIM (case-insensitive, contoh: 25SI025 atau 25si025)
-    // b. Sama dengan 3 digit kode (contoh: 025)
-    // c. Password default 'si2025' atau cocok dengan input identifier
-    const normalizedInputNIM = idClean.toUpperCase();
-    const studentNIM = member.nim.toUpperCase();
 
-    const isMatch =
-      passClean.toUpperCase() === studentNIM ||
-      passClean === member.code ||
-      passClean.toLowerCase() === "si2025" ||
-      passClean.toLowerCase() === idClean.toLowerCase();
-
-    if (isMatch) {
-      return {
-        id: member.code,
-        code: member.code,
-        nim: member.nim,
-        username: member.nim,
-        fullname: member.fullname,
-        gender: member.gender || "L",
-        photo: member.photo || member.avatar || null,
-        role: "student",
-        status: "Aktif",
-        kelas: member.kelas || "SI-A (Reguler Pagi)",
-      };
-    }
+  // JIKA BUKAN MEMBER TERDAFTAR: TOLAK SECARA TEGAS!
+  if (!member) {
+    throw new Error(
+      `NIM / Pengguna '${idClean}' tidak terdaftar dalam sistem kelas. Hanya mahasiswa kelas Sistem Informasi dan Administrator terdaftar yang memiliki hak akses.`
+    );
   }
 
-  return null;
+  // JIKA TERDAFTAR: Validasi kecocokan password mahasiswa
+  const studentNIM = (member.nim || "").toUpperCase();
+  const studentCode = (member.code || "").toUpperCase();
+  const cleanPassUpper = passClean.toUpperCase();
+
+  const isPasswordValid =
+    (member.password && passClean === member.password) ||
+    cleanPassUpper === studentNIM ||
+    cleanPassUpper === studentCode ||
+    passClean.toLowerCase() === "si2025";
+
+  if (!isPasswordValid) {
+    throw new Error(
+      `Password untuk mahasiswa '${member.fullname}' (${member.nim}) tidak sesuai. Silakan gunakan password yang benar (default: sama dengan NIM).`
+    );
+  }
+
+  return {
+    id: member.code,
+    code: member.code,
+    nim: member.nim,
+    username: member.username || member.nim,
+    fullname: member.fullname,
+    gender: member.gender || "L",
+    photo: member.photo || member.avatar || null,
+    role: "student",
+    status: "Aktif",
+    kelas: member.kelas || "SI-1",
+  };
 }
 
 // ─── 5. Auth API (Login Administrator & Member Mahasiswa) ─────────────────────
 export async function loginUser(credentials) {
-  // Jika di Vercel (HTTPS) dan belum ada backend HTTPS publik, langsung gunakan auth mandiri
+  // Jika di Vercel (HTTPS) dan belum ada backend HTTPS publik, langsung gunakan auth mandiri terverifikasi
   if (isStandaloneMode) {
     const user = authenticateOffline(credentials);
-    if (user) {
-      return {
-        message: "Berhasil masuk ke akun",
-        token: "si_token_standalone_" + Date.now(),
-        user,
-      };
-    }
-    throw new Error(
-      "NIM / Username atau Password tidak sesuai. Mahasiswa: gunakan NIM Anda (contoh: 25SI025) dan password sama dengan NIM."
-    );
+    return {
+      message: "Berhasil masuk ke akun",
+      token: "si_token_standalone_" + Date.now(),
+      user,
+    };
   }
 
   // Coba kirim ke server backend
@@ -242,25 +251,20 @@ export async function loginUser(credentials) {
       err.code === "ERR_NETWORK" ||
       err.code === "ECONNABORTED";
 
-    // Jika terjadi Network Error (server backend offline / tidak aktif), aktifkan fallback mandiri
+    // Jika terjadi Network Error (server backend offline / tidak aktif), gunakan autentikasi mandiri terdaftar
     if (isNetworkError) {
       console.warn(
-        "[Auth] Server backend tidak terhubung. Mengalihkan ke mode autentikasi mandiri."
+        "[Auth] Server backend offline. Memvalidasi hak akses melalui database terdaftar."
       );
       const fallbackUser = authenticateOffline(credentials);
-      if (fallbackUser) {
-        return {
-          message: "Berhasil masuk (Mode Offline)",
-          token: "si_token_offline_" + Date.now(),
-          user: fallbackUser,
-        };
-      }
-      throw new Error(
-        "Kredensial tidak cocok. Mahasiswa: gunakan NIM (contoh: 25SI025) dan password sama dengan NIM."
-      );
+      return {
+        message: "Berhasil masuk (Mode Terverifikasi)",
+        token: "si_token_offline_" + Date.now(),
+        user: fallbackUser,
+      };
     }
 
-    // Jika error dari backend (misal password salah)
+    // Jika error dari backend (misal 404 tidak terdaftar atau 401 password salah)
     const backendMessage =
       err.response?.data?.message || err.message || "Gagal masuk ke akun.";
     throw new Error(backendMessage);

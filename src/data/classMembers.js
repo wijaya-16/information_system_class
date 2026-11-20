@@ -41,37 +41,72 @@ export const CLASS_MEMBERS = {
 };
 
 /**
- * Mendapatkan data member berdasarkan NIM (case-insensitive).
+ * Mendapatkan data member berdasarkan NIM atau Kode Mahasiswa (case-insensitive).
  * Format NIM standar: 25SIxxx (3 digit angka terakhir unik)
+ * HANYA mengembalikan data jika member BENAR-BENAR TERDAFTAR dalam membersMap.
+ * Jika tidak terdaftar, WAJIB mengembalikan null agar sembarang orang tidak bisa masuk.
  */
 export function getMemberByNim(nim, customMembersMap = CLASS_MEMBERS) {
     if (!nim) return null;
     const clean = nim.trim().toUpperCase();
-
-    // Cek format: bisa diawali 25SI atau huruf lain, dan diakhiri 3 digit angka unik
-    const match = clean.match(/^(?:25SI)?(\d{3})$/i) || clean.match(/(\d{3})$/);
-    if (!match) return null;
-
-    const code = match[1]; // 3 digit angka unik
     const membersMap = customMembersMap || CLASS_MEMBERS;
-    const member = membersMap[code];
 
-    const standardNim = clean.startsWith('25SI') ? clean : `25SI${code}`;
+    let targetCode = null;
+    let memberData = null;
+
+    // 1. Cek langsung jika input adalah key code di membersMap (contoh: '001', '025')
+    if (membersMap[clean]) {
+        targetCode = clean;
+        memberData = membersMap[clean];
+    } else {
+        // 2. Cek format NIM standar: diawali 25SI dan 3 digit angka, atau 3 digit angka unik
+        const match = clean.match(/^25SI(\d{3})$/i) || clean.match(/^(\d{3})$/);
+        if (match) {
+            const candidateCode = match[1];
+            if (membersMap[candidateCode]) {
+                targetCode = candidateCode;
+                memberData = membersMap[candidateCode];
+            }
+        }
+    }
+
+    // 3. Fallback: cari berdasarkan properti nim atau username yang tersimpan di objek member
+    if (!memberData) {
+        for (const [key, val] of Object.entries(membersMap)) {
+            if (!val) continue;
+            const valNim = (val.nim || '').trim().toUpperCase();
+            const valUsername = (val.username || '').trim().toUpperCase();
+            if (valNim === clean || valUsername === clean) {
+                targetCode = key;
+                memberData = val;
+                break;
+            }
+        }
+    }
+
+    // JIKA TIDAK TERDAFTAR DALAM DAFTAR MEMBER RESMI: KEMBALIKAN NULL (AKSES DITOLAK)
+    if (!memberData) {
+        return null;
+    }
+
+    const standardNim = memberData.nim || (targetCode.length === 3 ? `25SI${targetCode}` : targetCode);
 
     return {
-        username: standardNim,
+        id: targetCode,
+        username: memberData.username || standardNim,
         nim: standardNim,
-        code: code,
-        fullname: member && member.fullname && member.fullname.trim() ? member.fullname.trim() : `Mahasiswa SI ${code}`,
-        gender: member?.gender || 'L',
-        photo: member?.photo || member?.avatar || null,
-        avatar: member?.avatar || member?.photo || null,
-        role: 'member',
+        code: targetCode,
+        fullname: memberData.fullname && memberData.fullname.trim() ? memberData.fullname.trim() : `Mahasiswa SI ${targetCode}`,
+        gender: memberData.gender || 'L',
+        photo: memberData.photo || memberData.avatar || null,
+        avatar: memberData.avatar || memberData.photo || null,
+        role: 'student',
         prodi: 'Sistem Informasi',
         jenjang: 'S1 Reguler',
         semester: 'Semester 3',
-        kelas: 'SI-1',
-        angkatan: '2025/2026',
-        status: 'Aktif',
+        kelas: memberData.kelas || 'SI-1',
+        angkatan: memberData.angkatan || '2025/2026',
+        status: memberData.status || 'Aktif',
+        password: memberData.password || null,
     };
 }

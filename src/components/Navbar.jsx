@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Icon from "./Icons";
 import { getFileUrl } from "../lib/api";
+import ThemeSwitcher from "./ThemeSwitcher";
 
 // Item navigasi biasa (tanpa dropdown)
 const navItems = [
@@ -164,60 +165,66 @@ export default function Navbar({
           ))}
         </nav>
 
-        {/* User info + Logout — Desktop */}
-        <div className="hidden md:flex items-center gap-2.5 pl-3 border-l border-slate-200">
-          <div
-            onClick={() => handleNav("profile")}
-            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition"
-            title="Buka Profil Akun"
-          >
+        {/* Theme Switcher & User info + Logout — Desktop */}
+        <div className="hidden md:flex items-center gap-3 pl-2">
+          {/* Theme Switcher Pill */}
+          <ThemeSwitcher />
+
+          <div className="flex items-center gap-2.5 pl-3 border-l navbar-divider">
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm overflow-hidden shrink-0 ${
-                user.role === "admin"
-                  ? "bg-slate-900 text-white"
-                  : "bg-gradient-to-tr from-blue-600 to-indigo-600 text-white"
-              }`}
+              onClick={() => handleNav("profile")}
+              className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition"
+              title="Buka Profil Akun"
             >
-              {user.photo ? (
-                <img
-                  src={user.photo}
-                  alt={user.fullname}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                user.fullname.charAt(0)
-              )}
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm overflow-hidden shrink-0 ${
+                  user.role === "admin"
+                    ? "bg-slate-900 text-white border border-white/20"
+                    : "bg-gradient-to-tr from-blue-600 to-indigo-600 text-white"
+                }`}
+              >
+                {user.photo ? (
+                  <img
+                    src={user.photo}
+                    alt={user.fullname}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  user.fullname.charAt(0)
+                )}
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-semibold text-slate-900 leading-tight">
+                  {user.fullname}
+                </p>
+                {user.role === "admin" ? (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-400/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>{" "}
+                    Admin
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-500/15 text-blue-300 border border-blue-400/30">
+                    {user.nim || `NIM: ${user.username}`}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="text-left">
-              <p className="text-xs font-semibold text-slate-900 leading-tight">
-                {user.fullname}
-              </p>
-              {user.role === "admin" ? (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>{" "}
-                  Admin
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                  {user.nim || `NIM: ${user.username}`}
-                </span>
-              )}
-            </div>
+            <button
+              onClick={onLogout}
+              title="Keluar"
+              className="p-2 text-slate-400 hover:text-red-400 transition ml-1"
+            >
+              <Icon name="log-out" className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            onClick={onLogout}
-            title="Keluar"
-            className="p-2 text-slate-400 hover:text-red-600 transition ml-1"
-          >
-            <Icon name="log-out" className="w-4 h-4" />
-          </button>
         </div>
 
         {/* Tombol Menu Mobile */}
         <div className="md:hidden flex items-center gap-2">
+          <ThemeSwitcher compact={true} />
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-slate-600"
+            className="p-2 theme-nav-toggle transition"
           >
             <Icon name={mobileMenuOpen ? "x" : "menu"} className="w-6 h-6" />
           </button>
@@ -227,6 +234,10 @@ export default function Navbar({
       {/* ── Menu Mobile ── */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-white border-b border-slate-200 px-4 py-3 space-y-1">
+          <div className="pb-2 mb-2 border-b navbar-divider flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Ganti Tema Tampilan</span>
+            <ThemeSwitcher />
+          </div>
           <button
             onClick={() => handleNav("beranda")}
             className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium ${activePage === "beranda" ? "bg-slate-100 text-slate-900" : "text-slate-600"}`}
@@ -291,7 +302,7 @@ export default function Navbar({
             </button>
           ))}
 
-          <div className="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between px-3">
+          <div className="pt-3 mt-3 border-t navbar-divider flex items-center justify-between px-3">
             <div
               onClick={() => handleNav("profile")}
               className="cursor-pointer"

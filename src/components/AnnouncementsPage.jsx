@@ -101,7 +101,7 @@ export default function AnnouncementsPage({
                     <div className="flex items-center gap-2">
                         <h1 className="text-2xl font-extrabold text-slate-900">Pengumuman & Informasi</h1>
                         {isAdmin && (
-                            <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold">
+                            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[10px] font-bold">
                                 Admin
                             </span>
                         )}
@@ -185,7 +185,7 @@ export default function AnnouncementsPage({
                                 key={item.id}
                                 className={`bg-white rounded-2xl border p-6 hover:shadow-md transition ${
                                     item.important
-                                        ? 'border-amber-300 bg-gradient-to-r from-amber-50/40 via-white to-white'
+                                        ? 'border-amber-400/50 bg-amber-500/10'
                                         : 'border-slate-200'
                                 }`}
                             >
@@ -206,15 +206,15 @@ export default function AnnouncementsPage({
                                                 {item.course && (
                                                     <button
                                                         onClick={() => matchedCourse && navigateTo('matkul-detail', { id: matchedCourse.id })}
-                                                        className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition border border-blue-200"
+                                                        className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-300 hover:bg-blue-500/25 transition border border-blue-400/30"
                                                     >
                                                         {item.course}
                                                     </button>
                                                 )}
 
                                                 {item.important && (
-                                                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
-                                                        <Icon name="alert-triangle" className="w-3 h-3 text-amber-700" /> Penting
+                                                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-400/30 flex items-center gap-1">
+                                                        <Icon name="alert-triangle" className="w-3 h-3 text-amber-400" /> Penting
                                                     </span>
                                                 )}
                                             </div>

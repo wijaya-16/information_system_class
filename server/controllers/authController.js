@@ -17,28 +17,34 @@ export const login = async (req, res) => {
   try {
     // 1. Cek Admin Hardcoded / Direct check
     if (
-      (cleanId.toLowerCase() === "admin" || cleanId.toLowerCase() === "administrator") &&
-      cleanPass === "admin123"
+      cleanId.toLowerCase() === "admin" ||
+      cleanId.toLowerCase() === "administrator"
     ) {
-      const token = jwt.sign(
-        { id: 1, username: "admin", role: "admin" },
-        process.env.JWT_SECRET || "secret_key_kelas",
-        { expiresIn: "7d" }
-      );
-      return res.json({
-        message: "Login berhasil sebagai Administrator",
-        token,
-        user: {
-          id: 1,
-          nim: "ADMIN",
-          code: "admin",
-          username: "admin",
-          fullname: "Administrator Kelas",
-          role: "admin",
-          email: "admin@kelas.ac.id",
-          photo: null,
-        },
-      });
+      if (cleanPass === "admin123") {
+        const token = jwt.sign(
+          { id: 1, username: "admin", role: "admin" },
+          process.env.JWT_SECRET || "secret_key_kelas",
+          { expiresIn: "7d" }
+        );
+        return res.json({
+          message: "Login berhasil sebagai Administrator",
+          token,
+          user: {
+            id: 1,
+            nim: "ADMIN",
+            code: "admin",
+            username: "admin",
+            fullname: "Administrator Kelas",
+            role: "admin",
+            email: "admin@kelas.ac.id",
+            photo: null,
+          },
+        });
+      } else {
+        return res.status(401).json({
+          message: "Password Administrator salah. Akses ditolak.",
+        });
+      }
     }
 
     // 2. Format pencarian mahasiswa (Bisa berupa "25SI001", "25si001", atau cuma "001")
@@ -65,7 +71,7 @@ export const login = async (req, res) => {
 
     if (users.length === 0) {
       return res.status(404).json({
-        message: `Pengguna '${cleanId}' tidak ditemukan. Pastikan NIM Anda benar (contoh: 25SI001 atau 001).`,
+        message: `NIM / Pengguna '${cleanId}' tidak terdaftar dalam sistem kelas. Hanya mahasiswa terdaftar dan administrator yang memiliki hak akses.`,
       });
     }
 
@@ -78,15 +84,15 @@ export const login = async (req, res) => {
     } else {
       isPasswordValid = (
         cleanPass === user.password ||
-        cleanPass === user.nim ||
+        cleanPass.toUpperCase() === (user.nim || "").toUpperCase() ||
         cleanPass === "si2025" ||
-        cleanPass.toLowerCase() === (user.nim || "").toLowerCase()
+        cleanPass === user.code
       );
     }
 
     if (!isPasswordValid) {
       return res.status(401).json({
-        message: "Password salah. Silakan coba kembali atau gunakan password default.",
+        message: `Password tidak sesuai untuk pengguna '${user.fullname}'. Silakan periksa kembali password Anda.`,
       });
     }
 

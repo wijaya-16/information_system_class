@@ -94,13 +94,13 @@ export default function MaterialDetailPage({
                     <div className="flex items-center gap-2">
                         <button
                             onClick={openEdit}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold transition shadow-sm"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 border border-white/15 hover:bg-white/20 text-white rounded-lg text-xs font-semibold transition shadow-sm"
                         >
                             <Icon name="pencil" className="w-3.5 h-3.5" /> Edit Materi
                         </button>
                         <button
                             onClick={() => setConfirmDelete(true)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 rounded-lg text-xs font-semibold transition"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/15 border border-rose-500/25 hover:bg-rose-500/25 text-rose-300 rounded-lg text-xs font-semibold transition"
                         >
                             <Icon name="trash-2" className="w-3.5 h-3.5" /> Hapus
                         </button>
@@ -112,7 +112,7 @@ export default function MaterialDetailPage({
             <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm space-y-6">
                 <div className="flex justify-between items-start gap-4">
                     <div>
-                        <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-800 border border-slate-200">
+                        <span className="text-xs font-semibold px-3 py-1 rounded-full bg-white/10 text-white border border-white/15">
                             {material.course}
                         </span>
                         <h1 className="text-2xl font-extrabold text-slate-900 mt-3">{material.title}</h1>
@@ -121,7 +121,7 @@ export default function MaterialDetailPage({
                             {material.lecturer} · Diunggah pada {material.date}
                         </p>
                     </div>
-                    <span className="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-mono font-semibold shrink-0">
+                    <span className="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-xs font-mono font-semibold shrink-0">
                         {material.type}
                     </span>
                 </div>
@@ -137,7 +137,7 @@ export default function MaterialDetailPage({
 
                 <div className="border-t border-slate-100 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50 p-6 rounded-xl border border-slate-100">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-700 shadow-sm">
+                        <div className="w-10 h-10 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center text-white shadow-sm">
                             <Icon name="file-text" className="w-5 h-5" />
                         </div>
                         <div>
@@ -147,7 +147,7 @@ export default function MaterialDetailPage({
                     </div>
                     <button
                         onClick={handleDownload}
-                        className="w-full sm:w-auto px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl text-sm transition shadow-sm flex items-center justify-center gap-2"
+                        className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
                     >
                         <Icon name="download" className="w-4 h-4" /> Unduh Berkas
                     </button>

@@ -236,8 +236,8 @@ export default function CourseDetailPage({
                 </button>
 
                 {isAdmin && (
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-semibold">
-                        <Icon name="shield-check" className="w-3.5 h-3.5 text-amber-600" />
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[11px] font-semibold">
+                        <Icon name="shield-check" className="w-3.5 h-3.5 text-amber-400" />
                         Admin Mode Aktif
                     </div>
                 )}

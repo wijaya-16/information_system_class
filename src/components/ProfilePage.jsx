@@ -1,12 +1,14 @@
 import React, { useState, useRef } from 'react';
 import Icon from './Icons';
 import ImageCropperModal from './ImageCropperModal';
+import { useTheme } from '../context/ThemeContext';
 
 export default function ProfilePage({ user, onLogout, navigateTo, adminHandlers, showToast }) {
     if (!user) return null;
 
     const isAdmin = user.role === 'admin';
     const fileInputRef = useRef(null);
+    const { theme, setTheme, themes } = useTheme();
 
     const [cropperState, setCropperState] = useState({
         isOpen: false,
@@ -212,6 +214,84 @@ export default function ProfilePage({ user, onLogout, navigateTo, adminHandlers,
                             <span className="text-[11px] text-slate-400 block font-medium">Beban Studi Semester Ini</span>
                             <span className="text-sm font-bold text-slate-900">22 SKS (8 Mata Kuliah)</span>
                         </div>
+                    </div>
+                </div>
+
+                {/* 🎨 Personalisasi & Pilihan Tema Tampilan Populer */}
+                <div className="mt-8 pt-6 border-t border-slate-100">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                                <Icon name="palette" className="w-3.5 h-3.5 text-cyan-400" />
+                                Tema Tampilan Website (5 Tema Populer)
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                Pilih tema favorit untuk mengubah suasana dan warna seluruh website secara instan.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {themes.map((t) => {
+                            const isActive = t.id === theme;
+                            return (
+                                <button
+                                    key={t.id}
+                                    type="button"
+                                    onClick={() => {
+                                        setTheme(t.id);
+                                        if (showToast) showToast(`Tema berhasil diubah ke ${t.name}!`, 'success');
+                                    }}
+                                    className={`text-left p-3.5 rounded-2xl border transition-all duration-200 relative group flex flex-col justify-between ${
+                                        isActive
+                                            ? 'border-cyan-400/50 bg-white/10 ring-2 ring-cyan-400/20 shadow-lg'
+                                            : 'border-white/10 hover:border-white/20 hover:bg-white/5'
+                                    }`}
+                                >
+                                    <div className="flex items-start justify-between gap-2 mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <div
+                                                className="w-7 h-7 rounded-lg flex items-center justify-center text-white"
+                                                style={{ backgroundColor: t.accentColor }}
+                                            >
+                                                <Icon name={t.icon} className="w-4 h-4 text-slate-950" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors">
+                                                    {t.name}
+                                                </p>
+                                                <span className={`text-[9px] px-1.5 py-0.2 rounded font-semibold border ${t.badgeCls}`}>
+                                                    {t.category}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        {isActive && (
+                                            <span className="w-5 h-5 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center text-xs font-bold shrink-0">
+                                                <Icon name="check" className="w-3 h-3 stroke-[3]" />
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed mb-3">
+                                        {t.desc}
+                                    </p>
+
+                                    {/* Palette Preview Bar */}
+                                    <div className="flex items-center gap-1.5 pt-2 border-t border-white/5">
+                                        <span className="text-[10px] text-slate-500 font-medium">Palet:</span>
+                                        <div className="flex items-center gap-1">
+                                            {t.swatches.map((swatch, idx) => (
+                                                <span
+                                                    key={idx}
+                                                    className="w-3 h-3 rounded-full ring-1 ring-white/10 shadow-xs"
+                                                    style={{ backgroundColor: swatch }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 

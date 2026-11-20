@@ -870,7 +870,7 @@ export default function HomePage({
                         sub: '22 Total SKS Semester 3',
                         icon: 'library',
                         color: 'from-blue-600 to-cyan-600',
-                        bgLight: 'bg-blue-50 text-blue-700',
+                        bgLight: 'bg-blue-500/15 text-blue-400 border border-blue-400/30',
                         action: () => navigateTo('matkul'),
                     },
                     {
@@ -880,7 +880,7 @@ export default function HomePage({
                         sub: studentStats ? `${studentStats.completed} tugas dikumpulkan` : 'Cek instruksi & deadline',
                         icon: 'clipboard-list',
                         color: 'from-amber-500 to-orange-600',
-                        bgLight: 'bg-amber-50 text-amber-700',
+                        bgLight: 'bg-amber-500/15 text-amber-400 border border-amber-400/30',
                         action: () => navigateTo('tugas'),
                     },
                     {
@@ -890,7 +890,7 @@ export default function HomePage({
                         sub: 'Siap diunduh untuk belajar',
                         icon: 'book-open',
                         color: 'from-emerald-500 to-teal-600',
-                        bgLight: 'bg-emerald-50 text-emerald-700',
+                        bgLight: 'bg-emerald-500/15 text-emerald-400 border border-emerald-400/30',
                         action: () => navigateTo('materi'),
                     },
                     {
@@ -900,7 +900,7 @@ export default function HomePage({
                         sub: 'Semester 3 Angkatan 2025',
                         icon: 'users',
                         color: 'from-purple-600 to-indigo-600',
-                        bgLight: 'bg-purple-50 text-purple-700',
+                        bgLight: 'bg-purple-500/15 text-purple-400 border border-purple-400/30',
                         action: () => navigateTo('mahasiswa'),
                     },
                 ].map((stat, idx) => (
@@ -936,11 +936,11 @@ export default function HomePage({
             </div>
 
             {/* ── 3. JADWAL KULIAH MINGGUAN INTERAKTIF ── */}
-            <div id="jadwal-kuliah" className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-5 scroll-mt-6">
+            <div id="jadwal-kuliah" className="jadwal-section bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-5 scroll-mt-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold mb-1">
-                            <Icon name="calendar" className="w-3.5 h-3.5" />
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-300 border border-blue-400/30 text-xs font-bold mb-1">
+                            <Icon name="calendar" className="w-3.5 h-3.5 text-blue-400" />
                             Jadwal Perkuliahan Semester 3
                         </div>
                         <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
@@ -952,7 +952,7 @@ export default function HomePage({
                     </div>
 
                     {/* Selector Hari */}
-                    <div className="flex items-center gap-1 overflow-x-auto pb-1 bg-slate-100 p-1.5 rounded-2xl">
+                    <div className="day-selector flex items-center gap-1 overflow-x-auto pb-1 bg-slate-100 p-1.5 rounded-2xl">
                         {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'].map(day => {
                             const isToday = day === currentDayName;
                             const isSelected = selectedDay === day;
@@ -962,7 +962,7 @@ export default function HomePage({
                                     onClick={() => setSelectedDay(day)}
                                     className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
                                         isSelected
-                                            ? 'bg-slate-900 text-white shadow-sm'
+                                            ? 'bg-slate-900 text-white shadow-sm ring-1 ring-white/20'
                                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                                     }`}
                                 >
@@ -982,35 +982,35 @@ export default function HomePage({
                         <div
                             key={idx}
                             onClick={() => navigateTo('matkul')}
-                            className="p-5 rounded-2xl border border-slate-200 hover:border-slate-300 hover:shadow-md transition bg-gradient-to-br from-white to-slate-50/50 flex flex-col justify-between cursor-pointer group"
+                            className="schedule-card p-5 rounded-2xl border border-slate-200/80 hover:border-slate-300 hover:shadow-md transition flex flex-col justify-between cursor-pointer group"
                         >
                             <div>
-                                <div className="flex items-center justify-between gap-2 mb-2">
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold">
-                                        <Icon name="clock" className="w-3 h-3 text-blue-600" />
+                                <div className="flex items-center justify-between gap-2 mb-2.5">
+                                    <span className="schedule-badge inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold border border-slate-200/60">
+                                        <Icon name="clock" className="w-3.5 h-3.5 text-blue-400" />
                                         {item.time}
                                     </span>
-                                    <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold">
+                                    <span className="px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-300 text-[10px] font-bold border border-blue-400/30">
                                         {item.credits} SKS · {item.type}
                                     </span>
                                 </div>
 
-                                <h3 className="font-extrabold text-slate-900 text-base group-hover:text-blue-600 transition">
+                                <h3 className="font-extrabold text-slate-900 text-base group-hover:text-blue-400 transition-colors">
                                     {item.course}
                                 </h3>
 
-                                <p className="text-xs text-slate-600 mt-1 flex items-center gap-1">
+                                <p className="text-xs text-slate-600 mt-1 flex items-center gap-1.5">
                                     <Icon name="user" className="w-3.5 h-3.5 text-slate-400" />
                                     {item.lecturer}
                                 </p>
                             </div>
 
-                            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                            <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-500">
                                 <span className="flex items-center gap-1 font-semibold text-slate-700">
-                                    <Icon name="map-pin" className="w-3.5 h-3.5 text-rose-500" />
+                                    <Icon name="map-pin" className="w-3.5 h-3.5 text-rose-400" />
                                     {item.room}
                                 </span>
-                                <span className="font-semibold text-slate-900 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                                <span className="font-semibold text-slate-900 group-hover:translate-x-1 group-hover:text-blue-400 transition-all inline-flex items-center gap-1">
                                     Buka Matkul &rarr;
                                 </span>
                             </div>
@@ -1147,11 +1147,11 @@ export default function HomePage({
                                     >
                                         <div className="flex items-center justify-between mb-1 text-[11px]">
                                             <div className="flex items-center gap-1.5">
-                                                <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
+                                                <span className="font-bold text-cyan-300 bg-cyan-500/15 border border-cyan-400/25 px-2 py-0.5 rounded-md">
                                                     {item.category}
                                                 </span>
                                                 {item.important && (
-                                                    <span className="font-extrabold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded-md">
+                                                    <span className="font-extrabold text-amber-300 bg-amber-500/15 border border-amber-400/25 px-1.5 py-0.5 rounded-md">
                                                         Penting
                                                     </span>
                                                 )}

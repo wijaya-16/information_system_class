@@ -357,32 +357,32 @@ export default function MembersPage({
                                 </div>
                                 <div className="w-px h-6 bg-slate-200 hidden sm:block" />
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+                                    <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-300 border border-blue-400/30 flex items-center justify-center font-bold">
                                         <Icon name="user" className="w-4.5 h-4.5" />
                                     </div>
                                     <div>
-                                        <span className="font-extrabold text-blue-700 text-lg leading-none">{countL}</span>
-                                        <span className="text-slate-500 text-xs ml-1">Laki-laki</span>
+                                        <span className="font-extrabold text-blue-300 text-lg leading-none">{countL}</span>
+                                        <span className="text-slate-400 text-xs ml-1">Laki-laki</span>
                                     </div>
                                 </div>
-                                <div className="w-px h-6 bg-slate-200 hidden sm:block" />
+                                <div className="w-px h-6 bg-white/10 hidden sm:block" />
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center font-bold">
+                                    <div className="w-9 h-9 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-400/30 flex items-center justify-center font-bold">
                                         <Icon name="user" className="w-4.5 h-4.5" />
                                     </div>
                                     <div>
-                                        <span className="font-extrabold text-rose-700 text-lg leading-none">{countP}</span>
-                                        <span className="text-slate-500 text-xs ml-1">Perempuan</span>
+                                        <span className="font-extrabold text-rose-300 text-lg leading-none">{countP}</span>
+                                        <span className="text-slate-400 text-xs ml-1">Perempuan</span>
                                     </div>
                                 </div>
-                                <div className="w-px h-6 bg-slate-200 hidden sm:block" />
+                                <div className="w-px h-6 bg-white/10 hidden sm:block" />
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                                    <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 flex items-center justify-center font-bold">
                                         <Icon name="camera" className="w-4.5 h-4.5" />
                                     </div>
                                     <div>
-                                        <span className="font-extrabold text-emerald-700 text-lg leading-none">{countWithPhoto}</span>
-                                        <span className="text-slate-500 text-xs ml-1">Foto Terpasang</span>
+                                        <span className="font-extrabold text-emerald-300 text-lg leading-none">{countWithPhoto}</span>
+                                        <span className="text-slate-400 text-xs ml-1">Foto Terpasang</span>
                                     </div>
                                 </div>
                             </div>
@@ -653,7 +653,7 @@ export default function MembersPage({
                                 onClick={() => setSelectedMember(member)}
                                 className={`bg-white rounded-2xl border p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between group relative hover:shadow-lg ${
                                     isSelf
-                                        ? 'border-blue-400 ring-2 ring-blue-100 bg-gradient-to-b from-blue-50/20 to-white'
+                                        ? 'border-blue-400/80 ring-2 ring-blue-500/30 bg-blue-500/10'
                                         : 'border-slate-200 hover:border-slate-300'
                                 }`}
                             >
@@ -955,14 +955,14 @@ export default function MembersPage({
                                     </div>
 
                                     {/* Kredensial Login default */}
-                                    <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 space-y-1">
-                                        <div className="flex items-center gap-1.5 font-bold">
-                                            <Icon name="key" className="w-3.5 h-3.5 text-blue-600" />
+                                    <div className="p-3.5 rounded-xl bg-blue-500/15 border border-blue-400/30 text-xs text-blue-200 space-y-1">
+                                        <div className="flex items-center gap-1.5 font-bold text-blue-300">
+                                            <Icon name="key" className="w-3.5 h-3.5 text-blue-400" />
                                             Informasi Akun Mahasiswa
                                         </div>
-                                        <p className="text-[11px] text-blue-800 leading-relaxed">
+                                        <p className="text-[11px] text-blue-200/90 leading-relaxed">
                                             Akun mahasiswa ini digunakan untuk mengakses materi, melihat informasi akademik, dan mengumpulkan tugas kelas.
-                                            Username default: <strong className="font-mono">{selectedMember.nim}</strong>
+                                            Username default: <strong className="font-mono text-cyan-300">{selectedMember.nim}</strong>
                                         </p>
                                     </div>
                                 </div>

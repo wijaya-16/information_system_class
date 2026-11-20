@@ -139,15 +139,15 @@ export default function AssignmentsPage({
                 <div>
                     <div className="flex items-center gap-2">
                         <h1 className="text-2xl font-extrabold text-slate-900">Tugas Kuliah</h1>
-                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 text-xs font-bold">
                             {activeCount} Aktif
                         </span>
                         {isAdmin ? (
-                            <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold">
+                            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[10px] font-bold">
                                 Admin
                             </span>
                         ) : (
-                            <span className="px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-bold">
+                            <span className="px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-300 text-[10px] font-bold">
                                 Mahasiswa
                             </span>
                         )}
@@ -247,8 +247,8 @@ export default function AssignmentsPage({
                                         <div className="flex items-center gap-1.5">
                                             <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                                                 task.status === 'Aktif'
-                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                    : 'bg-slate-100 text-slate-600'
+                                                    ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-400/30'
+                                                    : 'bg-slate-500/15 text-slate-300 border border-slate-400/30'
                                             }`}>
                                                 {task.status}
                                             </span>

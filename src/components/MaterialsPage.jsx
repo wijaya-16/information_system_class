@@ -148,7 +148,7 @@ export default function MaterialsPage({
                     <div className="flex items-center gap-2">
                         <h1 className="text-2xl font-extrabold text-slate-900">Materi Perkuliahan</h1>
                         {isAdmin && (
-                            <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold">
+                            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[10px] font-bold">
                                 Admin
                             </span>
                         )}
@@ -307,8 +307,8 @@ export default function MaterialsPage({
                                     {uploading ? 'Mengunggah Berkas...' : 'Unggah File dari Komputer'}
                                 </button>
                                 {form.file_url ? (
-                                    <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-medium truncate flex items-center gap-1">
-                                        <Icon name="check" className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                    <span className="text-[11px] text-emerald-300 bg-emerald-500/15 px-2.5 py-1 rounded-lg border border-emerald-400/30 font-medium truncate flex items-center gap-1">
+                                        <Icon name="check" className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                                         Berkas tersimpan di server
                                     </span>
                                 ) : (

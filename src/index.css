@@ -2,6 +2,608 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════════════
+   THEME DESIGN SYSTEM (5 TEMA POPULER DUNIA 2026)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 1. CYBER MIDNIGHT (Linear / Vercel Dark Style - DEFAULT) */
+:root, [data-theme="midnight"] {
+  --theme-bg-body: #070a13;
+  --theme-bg-surface: rgba(15, 23, 42, 0.72);
+  --theme-bg-surface-elevated: rgba(30, 41, 59, 0.85);
+  --theme-bg-subtle: rgba(255, 255, 255, 0.05);
+  --theme-border: rgba(255, 255, 255, 0.1);
+  --theme-border-highlight: rgba(56, 189, 248, 0.4);
+  --theme-text-primary: #f8fafc;
+  --theme-text-secondary: #cbd5e1;
+  --theme-text-muted: #94a3b8;
+  --theme-accent: #38bdf8;
+  --theme-accent-gradient: linear-gradient(135deg, #2563eb, #38bdf8);
+  --theme-accent-glow: rgba(56, 189, 248, 0.25);
+  --theme-nav-bg: rgba(7, 10, 19, 0.85);
+  --theme-card-bg: rgba(15, 23, 42, 0.72);
+  --theme-input-bg: rgba(15, 23, 42, 0.85);
+  --theme-input-border: rgba(255, 255, 255, 0.15);
+  --theme-orb-1: rgba(37, 99, 235, 0.25);
+  --theme-orb-2: rgba(56, 189, 248, 0.2);
+  --theme-orb-3: rgba(147, 51, 234, 0.15);
+  --theme-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.65);
+  color-scheme: dark;
+}
+
+/* 2. AURORA EMERALD (Supabase / Matrix Neo Tech) */
+[data-theme="aurora"] {
+  --theme-bg-body: #05130e;
+  --theme-bg-surface: rgba(11, 35, 26, 0.75);
+  --theme-bg-surface-elevated: rgba(18, 53, 40, 0.88);
+  --theme-bg-subtle: rgba(16, 185, 129, 0.07);
+  --theme-border: rgba(16, 185, 129, 0.18);
+  --theme-border-highlight: rgba(52, 211, 153, 0.45);
+  --theme-text-primary: #ecfdf5;
+  --theme-text-secondary: #a7f3d0;
+  --theme-text-muted: #6ee7b7;
+  --theme-accent: #10b981;
+  --theme-accent-gradient: linear-gradient(135deg, #059669, #10b981, #34d399);
+  --theme-accent-glow: rgba(16, 185, 129, 0.3);
+  --theme-nav-bg: rgba(5, 19, 14, 0.88);
+  --theme-card-bg: rgba(11, 35, 26, 0.75);
+  --theme-input-bg: rgba(8, 26, 19, 0.88);
+  --theme-input-border: rgba(16, 185, 129, 0.22);
+  --theme-orb-1: rgba(16, 185, 129, 0.28);
+  --theme-orb-2: rgba(20, 184, 166, 0.22);
+  --theme-orb-3: rgba(52, 211, 153, 0.15);
+  --theme-shadow: 0 20px 40px -15px rgba(2, 44, 34, 0.75);
+  color-scheme: dark;
+}
+
+/* 3. SUNSET NEBULA (Tokyo Cyberpunk Synthwave) */
+[data-theme="sunset"] {
+  --theme-bg-body: #0d0716;
+  --theme-bg-surface: rgba(26, 13, 46, 0.75);
+  --theme-bg-surface-elevated: rgba(42, 21, 74, 0.88);
+  --theme-bg-subtle: rgba(244, 63, 94, 0.07);
+  --theme-border: rgba(244, 63, 94, 0.18);
+  --theme-border-highlight: rgba(244, 63, 94, 0.45);
+  --theme-text-primary: #fff1f2;
+  --theme-text-secondary: #fbcfe8;
+  --theme-text-muted: #f472b6;
+  --theme-accent: #f43f5e;
+  --theme-accent-gradient: linear-gradient(135deg, #e11d48, #9333ea, #f59e0b);
+  --theme-accent-glow: rgba(244, 63, 94, 0.3);
+  --theme-nav-bg: rgba(13, 7, 22, 0.88);
+  --theme-card-bg: rgba(26, 13, 46, 0.75);
+  --theme-input-bg: rgba(20, 10, 36, 0.88);
+  --theme-input-border: rgba(244, 63, 94, 0.25);
+  --theme-orb-1: rgba(244, 63, 94, 0.28);
+  --theme-orb-2: rgba(168, 85, 247, 0.24);
+  --theme-orb-3: rgba(245, 158, 11, 0.18);
+  --theme-shadow: 0 20px 40px -15px rgba(26, 5, 40, 0.8);
+  color-scheme: dark;
+}
+
+/* 4. SAPPHIRE OCEAN (Academic Elite / Royal Navy) */
+[data-theme="sapphire"] {
+  --theme-bg-body: #060e1d;
+  --theme-bg-surface: rgba(12, 27, 54, 0.78);
+  --theme-bg-surface-elevated: rgba(19, 42, 82, 0.88);
+  --theme-bg-subtle: rgba(2, 132, 199, 0.08);
+  --theme-border: rgba(2, 132, 199, 0.2);
+  --theme-border-highlight: rgba(56, 189, 248, 0.5);
+  --theme-text-primary: #f0f9ff;
+  --theme-text-secondary: #bae6fd;
+  --theme-text-muted: #7dd3fc;
+  --theme-accent: #0284c7;
+  --theme-accent-gradient: linear-gradient(135deg, #0369a1, #0284c7, #38bdf8);
+  --theme-accent-glow: rgba(2, 132, 199, 0.3);
+  --theme-nav-bg: rgba(6, 14, 29, 0.88);
+  --theme-card-bg: rgba(12, 27, 54, 0.78);
+  --theme-input-bg: rgba(9, 21, 43, 0.88);
+  --theme-input-border: rgba(2, 132, 199, 0.25);
+  --theme-orb-1: rgba(2, 132, 199, 0.3);
+  --theme-orb-2: rgba(30, 64, 175, 0.25);
+  --theme-orb-3: rgba(56, 189, 248, 0.18);
+  --theme-shadow: 0 20px 40px -15px rgba(2, 20, 50, 0.8);
+  color-scheme: dark;
+}
+
+/* 5. STUDIO CUPERTINO (Apple Minimalist Light - Soft Eye-Care Edition) */
+[data-theme="cupertino"] {
+  --theme-bg-body: #e9eef5;
+  --theme-bg-surface: #f4f7fb;
+  --theme-bg-surface-elevated: #e2e8f0;
+  --theme-bg-subtle: #dde3eb;
+  --theme-border: #cbd5e1;
+  --theme-border-highlight: #64748b;
+  --theme-text-primary: #0f172a;
+  --theme-text-secondary: #334155;
+  --theme-text-muted: #64748b;
+  --theme-accent: #2563eb;
+  --theme-accent-gradient: linear-gradient(135deg, #0f172a, #2563eb);
+  --theme-accent-glow: rgba(37, 99, 235, 0.15);
+  --theme-nav-bg: rgba(238, 242, 248, 0.92);
+  --theme-card-bg: #f8fafc;
+  --theme-input-bg: #ffffff;
+  --theme-input-border: #cbd5e1;
+  --theme-orb-1: rgba(186, 230, 253, 0.4);
+  --theme-orb-2: rgba(226, 232, 240, 0.5);
+  --theme-orb-3: rgba(203, 213, 225, 0.4);
+  --theme-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+  color-scheme: light;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   GLOBAL ADAPTATION FOR MODERN POPULAR THEMES
+   ═══════════════════════════════════════════════════════════════════ */
+
+body {
+  background-color: var(--theme-bg-body);
+  color: var(--theme-text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+/* Dark Theme Overrides for All Pages */
+[data-theme]:not([data-theme="cupertino"]) {
+  /* Background main */
+  .bg-slate-50,
+  .bg-slate-100,
+  .bg-slate-200,
+  .bg-slate-300 {
+    background-color: var(--theme-bg-subtle) !important;
+  }
+
+  /* Cards & Panels become Frosted Glassmorphism */
+  .bg-white {
+    background-color: var(--theme-card-bg) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  /* Elevated subcards and schedule cards inside cards */
+  .schedule-card,
+  .bg-white .bg-slate-50,
+  .bg-white .bg-slate-100 {
+    background-color: var(--theme-bg-surface-elevated) !important;
+    border-color: var(--theme-border) !important;
+  }
+  .schedule-card:hover,
+  .bg-white .bg-slate-50:hover,
+  .bg-white .bg-slate-100:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border-color: var(--theme-border-highlight) !important;
+  }
+
+  /* Tailwind opacity-modified bg variants (bg-slate-50/70, bg-slate-100/80, etc.) */
+  [class*="bg-slate-50/"],
+  [class*="bg-slate-100/"],
+  [class*="bg-slate-200/"] {
+    background-color: var(--theme-bg-surface-elevated) !important;
+  }
+
+  /* Hover variants with opacity for dark themes */
+  [class*="hover:bg-slate-100/"]:hover,
+  [class*="hover:bg-slate-50/"]:hover,
+  [class*="hover:bg-slate-200/"]:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* Inner badges & chips inside cards — ensure dark bg */
+  .schedule-card .bg-slate-100,
+  .schedule-card [class*="bg-slate-100"],
+  .schedule-card [class*="bg-slate-50"] {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border-color: var(--theme-border) !important;
+  }
+
+  /* Schedule card time & SKS badges */
+  .schedule-card .text-slate-700 {
+    color: var(--theme-text-secondary) !important;
+  }
+
+  /* Neutralize background gradients with white on non-text elements */
+  :not(.bg-clip-text).from-white,
+  :not(.bg-clip-text).to-white,
+  :not(.bg-clip-text).via-white {
+    --tw-gradient-from: var(--theme-bg-surface-elevated) !important;
+    --tw-gradient-via: var(--theme-bg-surface) !important;
+    --tw-gradient-to: var(--theme-bg-subtle) !important;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+  }
+
+  /* Borders become subtle modern borders */
+  .border-slate-200,
+  .border-slate-100,
+  .border-slate-300,
+  [class*="border-slate-200/"],
+  [class*="border-slate-100/"] {
+    border-color: var(--theme-border) !important;
+  }
+
+  /* Text hierarchy mapped to crisp vibrant lights */
+  .text-slate-900,
+  .text-slate-800 {
+    color: var(--theme-text-primary) !important;
+  }
+  .text-slate-700,
+  .text-slate-600 {
+    color: var(--theme-text-secondary) !important;
+  }
+  .text-slate-500,
+  .text-slate-400 {
+    color: var(--theme-text-muted) !important;
+  }
+
+  /* Ensure text-slate-950 on cards or normal text is visible */
+  h1.text-slate-950,
+  h2.text-slate-950,
+  h3.text-slate-950,
+  p.text-slate-950,
+  span.text-slate-950:not(.bg-amber-400 *):not(.bg-amber-500 *):not(.bg-cyan-400 *) {
+    color: var(--theme-text-primary) !important;
+  }
+
+  /* Universal High-Contrast Translucent Badges & Chips */
+  .bg-blue-50, .bg-blue-100, .bg-blue-200 {
+    background-color: rgba(59, 130, 246, 0.16) !important;
+    border-color: rgba(96, 165, 250, 0.35) !important;
+  }
+  .text-blue-600, .text-blue-700, .text-blue-800, .text-blue-900 {
+    color: #93c5fd !important;
+  }
+
+  .bg-emerald-50, .bg-emerald-100, .bg-emerald-200 {
+    background-color: rgba(16, 185, 129, 0.16) !important;
+    border-color: rgba(52, 211, 153, 0.35) !important;
+  }
+  .text-emerald-600, .text-emerald-700, .text-emerald-800, .text-emerald-900 {
+    color: #6ee7b7 !important;
+  }
+
+  .bg-amber-50, .bg-amber-100, .bg-amber-200 {
+    background-color: rgba(245, 158, 11, 0.16) !important;
+    border-color: rgba(251, 191, 36, 0.35) !important;
+  }
+  .text-amber-600, .text-amber-700, .text-amber-800, .text-amber-900 {
+    color: #fde047 !important;
+  }
+
+  .bg-rose-50, .bg-rose-100, .bg-rose-200 {
+    background-color: rgba(244, 63, 94, 0.16) !important;
+    border-color: rgba(251, 113, 133, 0.35) !important;
+  }
+  .text-rose-600, .text-rose-700, .text-rose-800, .text-rose-900 {
+    color: #fda4af !important;
+  }
+
+  .bg-purple-50, .bg-purple-100, .bg-purple-200 {
+    background-color: rgba(168, 85, 247, 0.16) !important;
+    border-color: rgba(192, 132, 252, 0.35) !important;
+  }
+  .text-purple-600, .text-purple-700, .text-purple-800, .text-purple-900 {
+    color: #d8b4fe !important;
+  }
+
+  .bg-indigo-50, .bg-indigo-100, .bg-indigo-200 {
+    background-color: rgba(99, 102, 241, 0.16) !important;
+    border-color: rgba(129, 140, 248, 0.35) !important;
+  }
+  .text-indigo-600, .text-indigo-700, .text-indigo-800, .text-indigo-900 {
+    color: #a5b4fc !important;
+  }
+
+  .bg-cyan-50, .bg-cyan-100, .bg-cyan-200 {
+    background-color: rgba(6, 182, 212, 0.16) !important;
+    border-color: rgba(34, 211, 238, 0.35) !important;
+  }
+  .text-cyan-600, .text-cyan-700, .text-cyan-800, .text-cyan-900 {
+    color: #67e8f9 !important;
+  }
+
+  /* Active tabs and buttons with bg-slate-900 */
+  button.bg-slate-900,
+  a.bg-slate-900 {
+    background-color: rgba(30, 41, 59, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.4);
+  }
+
+  button.bg-slate-900:hover,
+  a.bg-slate-900:hover {
+    background-color: rgba(51, 65, 85, 0.95) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+  }
+
+  /* Active tab pills with bg-white inside dark mode */
+  .bg-slate-100 button.bg-white,
+  .bg-slate-100 .bg-white {
+    background-color: rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  }
+
+  /* Active border highlight */
+  .border-slate-900 {
+    border-color: var(--theme-accent) !important;
+  }
+
+  /* Hover text contrast */
+  .hover\:text-slate-900:hover,
+  .hover\:text-slate-800:hover,
+  .hover\:text-slate-700:hover {
+    color: #ffffff !important;
+  }
+
+  .hover\:text-blue-600:hover {
+    color: #38bdf8 !important;
+  }
+
+  /* Dark header & footer */
+  header {
+    background-color: var(--theme-nav-bg) !important;
+    border-color: var(--theme-border) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  footer {
+    background-color: var(--theme-nav-bg) !important;
+    border-color: var(--theme-border) !important;
+  }
+
+  /* Inputs, selects, and textareas */
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    background-color: var(--theme-input-bg) !important;
+    border-color: var(--theme-input-border) !important;
+    color: var(--theme-text-primary) !important;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--theme-text-muted) !important;
+    opacity: 0.7;
+  }
+
+  /* Modals */
+  .bg-white.rounded-2xl,
+  .bg-white.rounded-3xl,
+  .bg-white.rounded-t-2xl {
+    background-color: var(--theme-bg-surface-elevated) !important;
+    border: 1px solid var(--theme-border) !important;
+    box-shadow: var(--theme-shadow) !important;
+  }
+
+  /* Interactive hover effects on cards */
+  .hover\:border-slate-300:hover {
+    border-color: var(--theme-border-highlight) !important;
+  }
+
+  .hover\:bg-slate-50:hover,
+  .hover\:bg-slate-100:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* Shadows tuned to deep dark contrast */
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl,
+  .shadow-2xl {
+    box-shadow: var(--theme-shadow) !important;
+  }
+
+  /* ── Jadwal Section & Day Selector deeper dark ── */
+  .jadwal-section {
+    background-color: var(--theme-card-bg) !important;
+    border-color: var(--theme-border) !important;
+  }
+
+  .day-selector {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid var(--theme-border) !important;
+  }
+
+  .day-selector button:not(.bg-slate-900) {
+    color: var(--theme-text-muted) !important;
+  }
+  .day-selector button:not(.bg-slate-900):hover {
+    color: var(--theme-text-primary) !important;
+    background-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* Schedule badge inside card for time & room */
+  .schedule-badge {
+    background-color: rgba(255, 255, 255, 0.07) !important;
+    border-color: var(--theme-border) !important;
+    color: var(--theme-text-secondary) !important;
+  }
+
+  /* Nested cards inside main cards — slightly more visible separation */
+  .bg-white .bg-white {
+    background-color: var(--theme-bg-surface-elevated) !important;
+    border-color: var(--theme-border) !important;
+  }
+
+  /* Tab switchers — Pengumuman/Agenda tabs inside white card */
+  .bg-white .bg-slate-100 button.bg-white,
+  .bg-white .bg-slate-100 button[class*="bg-white"] {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    color: var(--theme-text-primary) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  }
+
+  /* Lightbox / fullscreen modal bg */
+  .bg-white.rounded-3xl .bg-slate-950 {
+    background-color: #0a0a0a !important;
+  }
+
+  /* Assignment list nested cards */
+  .bg-white .hover\\:border-slate-300:hover {
+    border-color: var(--theme-border-highlight) !important;
+  }
+
+  /* Dashed borders for empty states */
+  .border-dashed.border-slate-200 {
+    border-color: var(--theme-border) !important;
+  }
+
+  /* Date badge inside agenda */
+  .bg-white .bg-slate-50 .bg-white {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border-color: var(--theme-border) !important;
+  }
+}
+
+/* ── Cupertino (Light) Soft Eye-Care Adaptations ── */
+[data-theme="cupertino"] {
+  /* Subtle glass cards with soft dimmed eye-comfort tone */
+  .bg-white {
+    background-color: var(--theme-card-bg) !important;
+  }
+
+  .bg-slate-50 {
+    background-color: var(--theme-bg-subtle) !important;
+  }
+
+  header {
+    background-color: var(--theme-nav-bg) !important;
+    border-color: var(--theme-border) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  footer {
+    background-color: var(--theme-nav-bg) !important;
+    border-color: var(--theme-border) !important;
+  }
+
+  .border-slate-200,
+  .border-slate-100 {
+    border-color: var(--theme-border) !important;
+  }
+
+  .schedule-card {
+    background-color: var(--theme-bg-surface-elevated) !important;
+    border-color: var(--theme-border) !important;
+  }
+
+  .schedule-card:hover {
+    background-color: #ffffff !important;
+    border-color: var(--theme-border-highlight) !important;
+  }
+}
+
+/* ── Universal Theme Switcher & Navbar Helper Classes ── */
+.theme-switcher-btn {
+  background-color: var(--theme-bg-subtle) !important;
+  border: 1px solid var(--theme-border) !important;
+  color: var(--theme-text-primary) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.theme-switcher-btn:hover {
+  background-color: var(--theme-bg-surface-elevated) !important;
+  border-color: var(--theme-border-highlight) !important;
+}
+
+.theme-switcher-btn .theme-icon {
+  color: var(--theme-accent) !important;
+}
+
+.theme-switcher-btn .theme-name {
+  color: var(--theme-text-primary) !important;
+}
+
+.theme-switcher-btn .theme-chevron {
+  color: var(--theme-text-muted) !important;
+}
+
+.navbar-divider {
+  border-color: var(--theme-border) !important;
+}
+
+.theme-nav-toggle {
+  color: var(--theme-text-muted) !important;
+}
+
+.theme-nav-toggle:hover {
+  color: var(--theme-text-primary) !important;
+}
+
+/* Ambient glow container */
+.theme-ambient-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.theme-ambient-orb-1 {
+  position: absolute;
+  top: -10%;
+  left: 20%;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--theme-orb-1) 0%, transparent 70%);
+  filter: blur(80px);
+  animation: theme-orb-drift 22s ease-in-out infinite alternate;
+}
+
+.theme-ambient-orb-2 {
+  position: absolute;
+  top: 30%;
+  right: -5%;
+  width: 550px;
+  height: 550px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--theme-orb-2) 0%, transparent 70%);
+  filter: blur(90px);
+  animation: theme-orb-drift 26s ease-in-out infinite alternate-reverse;
+}
+
+.theme-ambient-orb-3 {
+  position: absolute;
+  bottom: -5%;
+  left: 10%;
+  width: 650px;
+  height: 650px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--theme-orb-3) 0%, transparent 70%);
+  filter: blur(100px);
+  animation: theme-orb-drift 30s ease-in-out infinite alternate;
+}
+
+@keyframes theme-orb-drift {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, -30px) scale(1.08); }
+  100% { transform: translate(-30px, 40px) scale(0.95); }
+}
+
+/* Subtle modern grid overlay */
+.theme-grid-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.025;
+  background-image: 
+    linear-gradient(to right, #ffffff 1px, transparent 1px),
+    linear-gradient(to bottom, #ffffff 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+[data-theme="cupertino"] .theme-grid-overlay {
+  opacity: 0.02;
+  background-image: 
+    linear-gradient(to right, #475569 1px, transparent 1px),
+    linear-gradient(to bottom, #475569 1px, transparent 1px);
+}
+
 /* ── Hero Section Animations ── */
 @keyframes hero-fade-in {
   from { opacity: 0; transform: translateY(18px); }
@@ -62,4 +664,13 @@
   inset: 0;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
   animation: shimmer-line 3s ease-in-out infinite;
+}
+
+/* Micro animations */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in {
+  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

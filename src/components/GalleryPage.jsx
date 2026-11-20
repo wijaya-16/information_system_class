@@ -318,11 +318,11 @@ export default function GalleryPage({
 
     const getCategoryBadgeColor = (cat) => {
         switch (cat) {
-            case 'Praktikum & Perkuliahan': return 'bg-blue-50 text-blue-700 border-blue-200';
-            case 'Makrab & Kebersamaan': return 'bg-rose-50 text-rose-700 border-rose-200';
-            case 'Seminar & Workshop': return 'bg-amber-50 text-amber-700 border-amber-200';
-            case 'Kegiatan Luar': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-            default: return 'bg-slate-100 text-slate-700 border-slate-200';
+            case 'Praktikum & Perkuliahan': return 'bg-blue-500/15 text-blue-300 border-blue-400/30';
+            case 'Makrab & Kebersamaan': return 'bg-rose-500/15 text-rose-300 border-rose-400/30';
+            case 'Seminar & Workshop': return 'bg-amber-500/15 text-amber-300 border-amber-400/30';
+            case 'Kegiatan Luar': return 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30';
+            default: return 'bg-slate-500/15 text-slate-300 border-slate-400/30';
         }
     };
 
@@ -366,23 +366,23 @@ export default function GalleryPage({
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-50/70 border border-blue-200">
+                                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-500/15 border border-blue-400/30">
                                     <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
                                         <Icon name="camera" className="w-4 h-4" />
                                     </div>
                                     <div>
-                                        <span className="font-bold text-blue-900 text-base leading-none">{imageCount}</span>
-                                        <span className="text-blue-600 text-xs ml-1">Foto</span>
+                                        <span className="font-bold text-blue-300 text-base leading-none">{imageCount}</span>
+                                        <span className="text-blue-400 text-xs ml-1">Foto</span>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50/70 border border-rose-200">
+                                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-500/15 border border-rose-400/30">
                                     <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-rose-600 to-red-500 text-white flex items-center justify-center shadow-xs">
                                         <Icon name="video" className="w-4 h-4" />
                                     </div>
                                     <div>
-                                        <span className="font-bold text-rose-900 text-base leading-none">{videoCount}</span>
-                                        <span className="text-rose-600 text-xs ml-1 font-semibold">Video</span>
+                                        <span className="font-bold text-rose-300 text-base leading-none">{videoCount}</span>
+                                        <span className="text-rose-400 text-xs ml-1 font-semibold">Video</span>
                                     </div>
                                 </div>
 
