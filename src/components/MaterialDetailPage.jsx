@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Icon from './Icons';
 import Modal, { ConfirmDialog, FormField, inputCls, selectCls } from './Modal';
 import { getFileUrl } from '../lib/api';
+import { uploadDocument } from '../lib/storage';
 
 const FILE_TYPES = ['PDF', 'PPTX', 'DOCX', 'ZIP', 'MP4', 'XLSX'];
 
@@ -18,6 +19,8 @@ export default function MaterialDetailPage({
 
     const [isEditing, setIsEditing] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef(null);
 
     const [form, setForm] = useState({
         title: '',
@@ -25,7 +28,29 @@ export default function MaterialDetailPage({
         size: '',
         lecturer: '',
         description: '',
+        file_url: null,
     });
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploading(true);
+        try {
+            const res = await uploadDocument(file);
+            setForm(f => ({
+                ...f,
+                type: res.type || f.type,
+                size: res.size || f.size,
+                file_url: res.file_url,
+            }));
+            showToast('Berkas dokumen baru berhasil diunggah!', 'success');
+        } catch (err) {
+            showToast('Gagal upload berkas: ' + err.message, 'error');
+        } finally {
+            setUploading(false);
+            if (e.target) e.target.value = '';
+        }
+    };
 
     if (!material) {
         return (
@@ -52,6 +77,7 @@ export default function MaterialDetailPage({
             size: material.size || '2.0MB',
             lecturer: material.lecturer || '',
             description: material.description || '',
+            file_url: material.file_url || null,
         });
         setIsEditing(true);
     };
@@ -156,8 +182,54 @@ export default function MaterialDetailPage({
 
             {/* Modal Edit Materi */}
             {isEditing && (
-                <Modal title="Edit Materi Perkuliahan" onClose={() => setIsEditing(false)}>
+                <Modal title="Edit Materi Perkuliahan di Database" onClose={() => setIsEditing(false)}>
                     <div className="space-y-4">
+                        {/* Area Upload Dokumen Baru */}
+                        <FormField label="Berkas Dokumen Lampiran">
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                                className="hidden"
+                                accept=".pdf,.pptx,.ppt,.docx,.doc,.xlsx,.xls,.zip,.rar,.mp4"
+                            />
+                            {form.file_url ? (
+                                <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-400/30 flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                                            <Icon name="file-text" className="w-5 h-5" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-bold text-slate-900 truncate">
+                                                {form.title} ({form.type})
+                                            </p>
+                                            <p className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                                                <Icon name="check-circle" className="w-3 h-3" />
+                                                {form.size} · Berkas tersimpan di database
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/40 text-slate-800 text-xs font-semibold transition shrink-0"
+                                    >
+                                        Ganti Berkas
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={uploading}
+                                    className="w-full py-3 px-4 rounded-xl border-2 border-dashed border-blue-400/60 hover:border-blue-500 bg-blue-50/40 text-xs font-bold text-blue-600 flex items-center justify-center gap-2 transition"
+                                >
+                                    <Icon name={uploading ? "loader" : "upload"} className={`w-4 h-4 ${uploading ? 'animate-spin' : ''}`} />
+                                    {uploading ? 'Mengunggah Berkas...' : 'Unggah Berkas Baru dari Perangkat'}
+                                </button>
+                            )}
+                        </FormField>
+
                         <FormField label="Judul Materi" required>
                             <input
                                 className={inputCls}

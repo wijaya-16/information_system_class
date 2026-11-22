@@ -3,7 +3,7 @@ import Icon from './Icons';
 import ImageCropperModal from './ImageCropperModal';
 import { useTheme } from '../context/ThemeContext';
 
-export default function ProfilePage({ user, onLogout, navigateTo, adminHandlers, showToast }) {
+export default function ProfilePage({ user, onLogout, navigateTo, adminHandlers, showToast, data, dbConnected }) {
     if (!user) return null;
 
     const isAdmin = user.role === 'admin';
@@ -36,32 +36,52 @@ export default function ProfilePage({ user, onLogout, navigateTo, adminHandlers,
         e.target.value = '';
     };
 
-    // Eksekusi simpan foto profil ke data profil mahasiswa
+    // Eksekusi simpan foto profil ke data profil
     const handleCropComplete = (croppedUrl) => {
-        const code = user.code || (user.nim ? user.nim.replace('25SI', '') : null);
-        if (code && adminHandlers?.member) {
-            // Simpan foto profil ke data member
-            adminHandlers.member.update(code, code, {
-                fullname: user.fullname,
-                gender: user.gender || 'L',
-                photo: croppedUrl,
-            });
+        if (isAdmin) {
+            try {
+                const current = JSON.parse(localStorage.getItem('si_user') || '{}');
+                const updated = { ...current, photo: croppedUrl };
+                localStorage.setItem('si_user', JSON.stringify(updated));
+                user.photo = croppedUrl;
+            } catch {}
+            if (showToast) showToast('Foto profil Administrator berhasil diperbarui!', 'success');
+        } else {
+            const code = user.code || (user.nim ? user.nim.replace('25SI', '') : null);
+            if (code && adminHandlers?.member) {
+                // Simpan foto profil ke data member
+                adminHandlers.member.update(code, code, {
+                    fullname: user.fullname,
+                    gender: user.gender || 'L',
+                    photo: croppedUrl,
+                });
 
-            if (showToast) showToast('Foto profil berhasil disesuaikan dan diperbarui!', 'success');
+                if (showToast) showToast('Foto profil berhasil disesuaikan dan diperbarui!', 'success');
+            }
         }
 
         setCropperState({ isOpen: false, imageSrc: '' });
     };
 
     const handlePhotoDelete = () => {
-        const code = user.code || (user.nim ? user.nim.replace('25SI', '') : null);
-        if (code && adminHandlers?.member) {
-            adminHandlers.member.update(code, code, {
-                fullname: user.fullname,
-                gender: user.gender || 'L',
-                photo: null,
-            });
-            if (showToast) showToast('Foto profil telah dihapus', 'info');
+        if (isAdmin) {
+            try {
+                const current = JSON.parse(localStorage.getItem('si_user') || '{}');
+                delete current.photo;
+                localStorage.setItem('si_user', JSON.stringify(current));
+                delete user.photo;
+            } catch {}
+            if (showToast) showToast('Foto profil Administrator telah dihapus', 'info');
+        } else {
+            const code = user.code || (user.nim ? user.nim.replace('25SI', '') : null);
+            if (code && adminHandlers?.member) {
+                adminHandlers.member.update(code, code, {
+                    fullname: user.fullname,
+                    gender: user.gender || 'L',
+                    photo: null,
+                });
+                if (showToast) showToast('Foto profil telah dihapus', 'info');
+            }
         }
     };
 
@@ -109,16 +129,14 @@ export default function ProfilePage({ user, onLogout, navigateTo, adminHandlers,
                             )}
                         </div>
 
-                        {!isAdmin && (
-                            <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                className="absolute -bottom-1 -right-1 p-2 rounded-xl bg-slate-900 hover:bg-blue-600 text-white shadow-lg transition border-2 border-white"
-                                title="Unggah / Ganti Foto Profil"
-                            >
-                                <Icon name="camera" className="w-3.5 h-3.5" />
-                            </button>
-                        )}
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="absolute -bottom-1 -right-1 p-2 rounded-xl bg-slate-900 hover:bg-blue-600 text-white shadow-lg transition border-2 border-white"
+                            title="Unggah / Ganti Foto Profil"
+                        >
+                            <Icon name="camera" className="w-3.5 h-3.5" />
+                        </button>
                     </div>
 
                     {/* Informasi Dasar */}
@@ -128,8 +146,8 @@ export default function ProfilePage({ user, onLogout, navigateTo, adminHandlers,
                                 {user.fullname}
                             </h1>
                             {isAdmin ? (
-                                <span className="px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-1">
-                                    <Icon name="shield-check" className="w-3.5 h-3.5 text-amber-600" />
+                                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-xs font-bold flex items-center gap-1">
+                                    <Icon name="shield-check" className="w-3.5 h-3.5 text-amber-400" />
                                     Administrator
                                 </span>
                             ) : (
@@ -141,7 +159,7 @@ export default function ProfilePage({ user, onLogout, navigateTo, adminHandlers,
                         </div>
 
                         <p className="text-sm text-slate-500 font-mono">
-                            {isAdmin ? 'ID: admin' : `NIM: ${user.nim || user.username}`}
+                            {isAdmin ? 'ID: admin · admin@kelas.ac.id' : `NIM: ${user.nim || user.username}`}
                         </p>
 
                         <p className="text-xs text-slate-600 max-w-lg">
@@ -150,72 +168,169 @@ export default function ProfilePage({ user, onLogout, navigateTo, adminHandlers,
                                 : 'Terdaftar sebagai mahasiswa aktif Kelas Sistem Informasi Semester 3 dengan akses perkuliahan dan pengumpulan tugas.'}
                         </p>
 
-                        {!isAdmin && (
-                            <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                        <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm"
+                            >
+                                <Icon name="upload" className="w-3 h-3" />
+                                {user.photo ? 'Ganti Foto Profil' : 'Unggah Foto Profil'}
+                            </button>
+                            {user.photo && (
                                 <button
                                     type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm"
+                                    onClick={handlePhotoDelete}
+                                    className="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold transition border border-red-200 flex items-center gap-1"
                                 >
-                                    <Icon name="upload" className="w-3 h-3" />
-                                    {user.photo ? 'Ganti Foto Profil' : 'Unggah Foto Profil'}
+                                    <Icon name="trash-2" className="w-3 h-3" />
+                                    Hapus Foto
                                 </button>
-                                {user.photo && (
-                                    <button
-                                        type="button"
-                                        onClick={handlePhotoDelete}
-                                        className="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold transition border border-red-200 flex items-center gap-1"
-                                    >
-                                        <Icon name="trash-2" className="w-3 h-3" />
-                                        Hapus Foto
-                                    </button>
-                                )}
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── DETAIL INFORMASI: KONTROL ADMIN ATAU AKADEMIK MAHASISWA ── */}
+                {isAdmin ? (
+                    <div className="mt-8 pt-6 border-t border-slate-100 space-y-6">
+                        <div>
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-400/30 text-xs font-bold mb-1">
+                                <Icon name="shield-check" className="w-3.5 h-3.5 text-amber-400" />
+                                Otoritas & Status Sistem Kelas
                             </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Detail Informasi Akademik */}
-                <div className="mt-8 pt-6 border-t border-slate-100">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">
-                        Informasi Akademik & Keanggotaan
-                    </h3>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                            <span className="text-[11px] text-slate-400 block font-medium">Program Studi</span>
-                            <span className="text-sm font-bold text-slate-900">Sistem Informasi</span>
+                            <h3 className="text-lg font-extrabold text-slate-900">
+                                Panel Kontrol & Hak Akses Administrator
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                Ringkasan hak kendali sistem kelas Sistem Informasi Semester 3 dan status repositori database
+                            </p>
                         </div>
 
-                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                            <span className="text-[11px] text-slate-400 block font-medium">Semester / Jenjang</span>
-                            <span className="text-sm font-bold text-slate-900">Semester 3 · S1 Reguler</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
+                                <span className="text-[11px] text-slate-400 block font-semibold uppercase tracking-wider">Peran & Level Akses</span>
+                                <span className="text-sm font-extrabold text-slate-900 mt-1">Superuser Administrator</span>
+                                <span className="text-[10px] text-emerald-500 font-semibold mt-1">Hak Penuh Kelola Sistem</span>
+                            </div>
+
+                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
+                                <span className="text-[11px] text-slate-400 block font-semibold uppercase tracking-wider">Koneksi Database</span>
+                                <span className="text-sm font-extrabold text-slate-900 mt-1 flex items-center gap-1.5">
+                                    <span className={`w-2.5 h-2.5 rounded-full ${dbConnected ? 'bg-emerald-500 animate-pulse' : 'bg-blue-500'}`} />
+                                    {dbConnected ? 'MySQL Laragon Aktif' : 'Penyimpanan Mandiri'}
+                                </span>
+                                <span className="text-[10px] text-slate-500 mt-1">Sinkronisasi Realtime Terhubung</span>
+                            </div>
+
+                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between cursor-pointer hover:border-slate-300 transition group" onClick={() => navigateTo('mahasiswa')}>
+                                <span className="text-[11px] text-slate-400 block font-semibold uppercase tracking-wider">Mahasiswa Terdaftar</span>
+                                <span className="text-sm font-extrabold text-slate-900 mt-1 group-hover:text-blue-600 transition">
+                                    {Object.keys(data?.members || {}).length || 38} Mahasiswa
+                                </span>
+                                <span className="text-[10px] text-blue-500 font-semibold mt-1">Kelola Direktori Anggota &rarr;</span>
+                            </div>
+
+                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between cursor-pointer hover:border-slate-300 transition group" onClick={() => navigateTo('matkul')}>
+                                <span className="text-[11px] text-slate-400 block font-semibold uppercase tracking-wider">Mata Kuliah Aktif</span>
+                                <span className="text-sm font-extrabold text-slate-900 mt-1 group-hover:text-blue-600 transition">
+                                    {data?.courses?.length || 8} Mata Kuliah
+                                </span>
+                                <span className="text-[10px] text-blue-500 font-semibold mt-1">Atur SKS & Dosen &rarr;</span>
+                            </div>
+
+                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between cursor-pointer hover:border-slate-300 transition group" onClick={() => navigateTo('materi')}>
+                                <span className="text-[11px] text-slate-400 block font-semibold uppercase tracking-wider">Repositori Materi</span>
+                                <span className="text-sm font-extrabold text-slate-900 mt-1 group-hover:text-blue-600 transition">
+                                    {data?.materials?.length || 6} Modul Dokumen
+                                </span>
+                                <span className="text-[10px] text-blue-500 font-semibold mt-1">Unggah & Bagikan Berkas &rarr;</span>
+                            </div>
+
+                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between cursor-pointer hover:border-slate-300 transition group" onClick={() => navigateTo('tugas')}>
+                                <span className="text-[11px] text-slate-400 block font-semibold uppercase tracking-wider">Tugas Perkuliahan</span>
+                                <span className="text-sm font-extrabold text-slate-900 mt-1 group-hover:text-blue-600 transition">
+                                    {data?.assignments?.length || 3} Tugas Aktif ({data?.submissions?.length || 0} Terkumpul)
+                                </span>
+                                <span className="text-[10px] text-blue-500 font-semibold mt-1">Pantau Pengumpulan Tugas &rarr;</span>
+                            </div>
                         </div>
 
-                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                            <span className="text-[11px] text-slate-400 block font-medium">Tahun Akademik</span>
-                            <span className="text-sm font-bold text-slate-900">2025/2026</span>
-                        </div>
-
-                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                            <span className="text-[11px] text-slate-400 block font-medium">Kelas</span>
-                            <span className="text-sm font-bold text-slate-900">{user.kelas || 'SI-A (Reguler Pagi)'}</span>
-                        </div>
-
-                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                            <span className="text-[11px] text-slate-400 block font-medium">Status Keanggotaan</span>
-                            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                {user.status || 'Aktif'}
+                        {/* Akses Cepat Kelola Sistem */}
+                        <div className="pt-2">
+                            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-3">
+                                Aksi Cepat Administrator
                             </span>
-                        </div>
-
-                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                            <span className="text-[11px] text-slate-400 block font-medium">Beban Studi Semester Ini</span>
-                            <span className="text-sm font-bold text-slate-900">22 SKS (8 Mata Kuliah)</span>
+                            <div className="flex flex-wrap gap-2.5">
+                                <button
+                                    onClick={() => navigateTo('materi')}
+                                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+                                >
+                                    <Icon name="upload" className="w-3.5 h-3.5" /> Unggah Dokumen Materi
+                                </button>
+                                <button
+                                    onClick={() => navigateTo('tugas')}
+                                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+                                >
+                                    <Icon name="clipboard-list" className="w-3.5 h-3.5" /> Buat / Cek Tugas
+                                </button>
+                                <button
+                                    onClick={() => navigateTo('galeri')}
+                                    className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition flex items-center gap-1.5"
+                                >
+                                    <Icon name="camera" className="w-3.5 h-3.5" /> Unggah Foto / Video Kelas
+                                </button>
+                                <button
+                                    onClick={() => navigateTo('pengumuman')}
+                                    className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition flex items-center gap-1.5"
+                                >
+                                    <Icon name="bell" className="w-3.5 h-3.5" /> Buat Pengumuman
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="mt-8 pt-6 border-t border-slate-100">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">
+                            Informasi Akademik & Keanggotaan
+                        </h3>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                                <span className="text-[11px] text-slate-400 block font-medium">Program Studi</span>
+                                <span className="text-sm font-bold text-slate-900">Sistem Informasi</span>
+                            </div>
+
+                            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                                <span className="text-[11px] text-slate-400 block font-medium">Semester / Jenjang</span>
+                                <span className="text-sm font-bold text-slate-900">Semester 3 · S1 Reguler</span>
+                            </div>
+
+                            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                                <span className="text-[11px] text-slate-400 block font-medium">Tahun Akademik</span>
+                                <span className="text-sm font-bold text-slate-900">2025/2026</span>
+                            </div>
+
+                            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                                <span className="text-[11px] text-slate-400 block font-medium">Kelas</span>
+                                <span className="text-sm font-bold text-slate-900">{user.kelas || 'SI-A (Reguler Pagi)'}</span>
+                            </div>
+
+                            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                                <span className="text-[11px] text-slate-400 block font-medium">Status Keanggotaan</span>
+                                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    {user.status || 'Aktif'}
+                                </span>
+                            </div>
+
+                            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                                <span className="text-[11px] text-slate-400 block font-medium">Beban Studi Semester Ini</span>
+                                <span className="text-sm font-bold text-slate-900">22 SKS (8 Mata Kuliah)</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* 🎨 Personalisasi & Pilihan Tema Tampilan Populer */}
                 <div className="mt-8 pt-6 border-t border-slate-100">

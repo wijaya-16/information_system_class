@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import Icon from './Icons';
 import Modal, { ConfirmDialog, FormField, inputCls, selectCls } from './Modal';
-import { uploadFile } from '../lib/api';
+import { getFileUrl } from '../lib/api';
+import { uploadDocument } from '../lib/storage';
 
 const FILE_TYPES = ['PDF', 'PPTX', 'DOCX', 'ZIP', 'MP4', 'XLSX'];
 
@@ -26,6 +27,7 @@ export default function MaterialsPage({
     const [editItem, setEditItem] = useState(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
     const fileInputRef = useRef(null);
 
     // Form state
@@ -38,32 +40,31 @@ export default function MaterialsPage({
         date: getTodayDate(),
         description: '',
         file_url: null,
+        fileName: '',
     });
 
     const handleFileUpload = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
         setUploading(true);
+        setUploadProgress(20);
         try {
-            const res = await uploadFile(file);
-            if (res.url) {
-                const ext = file.name.split('.').pop().toUpperCase();
-                const sizeStr = file.size > 1024 * 1024
-                    ? (file.size / (1024 * 1024)).toFixed(1) + 'MB'
-                    : Math.round(file.size / 1024) + 'KB';
-                setForm(f => ({
-                    ...f,
-                    title: f.title || file.name.replace(/\.[^/.]+$/, ''),
-                    type: ext || f.type,
-                    size: sizeStr,
-                    file_url: res.url,
-                }));
-                showToast('Berkas berhasil diunggah ke server!', 'success');
-            }
+            const res = await uploadDocument(file, (p) => setUploadProgress(p));
+            setForm(f => ({
+                ...f,
+                title: f.title || file.name.replace(/\.[^/.]+$/, ''),
+                type: res.type || f.type,
+                size: res.size || f.size,
+                file_url: res.file_url,
+                fileName: file.name,
+            }));
+            showToast('Berkas dokumen berhasil diunggah dan siap disimpan ke database!', 'success');
         } catch (err) {
             showToast('Gagal upload berkas: ' + err.message, 'error');
         } finally {
             setUploading(false);
+            setUploadProgress(0);
+            if (e.target) e.target.value = '';
         }
     };
 
@@ -88,6 +89,7 @@ export default function MaterialsPage({
             date: getTodayDate(),
             description: '',
             file_url: null,
+            fileName: '',
         });
         setEditItem(null);
         setModalMode('add');
@@ -104,6 +106,7 @@ export default function MaterialsPage({
             date: mat.date || getTodayDate(),
             description: mat.description || '',
             file_url: mat.file_url || null,
+            fileName: mat.fileName || '',
         });
         setEditItem(mat);
         setModalMode('edit');
@@ -272,9 +275,24 @@ export default function MaterialsPage({
                                     <Icon name="file" className="w-3 h-3 text-slate-400" />
                                     {mat.size} · {mat.date}
                                 </span>
-                                <span className="font-semibold text-slate-900 group-hover:translate-x-0.5 transition inline-flex items-center gap-1">
-                                    Detail <Icon name="arrow-right" className="w-3 h-3" />
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    {mat.file_url && (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                window.open(getFileUrl(mat.file_url), '_blank');
+                                            }}
+                                            className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-400/30 text-[11px] font-bold transition flex items-center gap-1"
+                                            title="Unduh / Buka Dokumen"
+                                        >
+                                            <Icon name="download" className="w-3 h-3 text-emerald-400" /> Unduh
+                                        </button>
+                                    )}
+                                    <span className="font-semibold text-slate-900 group-hover:translate-x-0.5 transition inline-flex items-center gap-1">
+                                        Detail <Icon name="arrow-right" className="w-3 h-3" />
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     ))
@@ -284,39 +302,76 @@ export default function MaterialsPage({
             {/* Modal Tambah / Edit Materi */}
             {modalMode && (
                 <Modal
-                    title={modalMode === 'add' ? 'Tambah Materi Perkuliahan' : 'Edit Materi Perkuliahan'}
+                    title={modalMode === 'add' ? 'Tambah Materi Perkuliahan ke Database' : 'Edit Materi Perkuliahan'}
                     onClose={() => setModalMode(null)}
                 >
                     <div className="space-y-4">
-                        <FormField label="Berkas Dokumen / Materi (PDF, PPTX, Word, ZIP, dll)">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleFileUpload}
-                                    className="hidden"
-                                    accept=".pdf,.pptx,.ppt,.docx,.doc,.xlsx,.xls,.zip,.rar,.mp4"
-                                />
-                                <button
-                                    type="button"
+                        {/* Area Upload Dokumen Dropzone */}
+                        <FormField label="Unggah Dokumen Materi dari Laptop / HP">
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                                className="hidden"
+                                accept=".pdf,.pptx,.ppt,.docx,.doc,.xlsx,.xls,.zip,.rar,.mp4"
+                            />
+
+                            {!form.file_url ? (
+                                <div
                                     onClick={() => fileInputRef.current?.click()}
-                                    disabled={uploading}
-                                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-xl border border-slate-300 transition inline-flex items-center justify-center gap-2"
+                                    className="cursor-pointer border-2 border-dashed border-blue-400/60 hover:border-blue-500 rounded-2xl bg-blue-50/40 hover:bg-blue-50/70 p-5 text-center transition group space-y-2"
                                 >
-                                    <Icon name="upload" className="w-3.5 h-3.5" />
-                                    {uploading ? 'Mengunggah Berkas...' : 'Unggah File dari Komputer'}
-                                </button>
-                                {form.file_url ? (
-                                    <span className="text-[11px] text-emerald-300 bg-emerald-500/15 px-2.5 py-1 rounded-lg border border-emerald-400/30 font-medium truncate flex items-center gap-1">
-                                        <Icon name="check" className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                        Berkas tersimpan di server
+                                    <div className="w-12 h-12 mx-auto rounded-2xl bg-blue-500/15 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <Icon name={uploading ? "loader" : "upload-cloud"} className={`w-6 h-6 ${uploading ? 'animate-spin' : ''}`} />
+                                    </div>
+                                    <div className="space-y-0.5">
+                                        <p className="text-xs font-bold text-slate-800">
+                                            {uploading ? 'Sedang Mengunggah Dokumen...' : 'Ketuk atau Klik untuk Memilih Berkas Dokumen'}
+                                        </p>
+                                        <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                                            Mendukung PDF, PPTX, Word (DOCX), Excel, ZIP, MP4 dari Laptop/PC atau HP. Otomatis disimpan ke database.
+                                        </p>
+                                    </div>
+                                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/25 transition">
+                                        <Icon name="upload" className="w-3 h-3" />
+                                        Pilih Berkas Dokumen
                                     </span>
-                                ) : (
-                                    <span className="text-[11px] text-slate-400">
-                                        Opsional (bisa isi judul & info secara manual)
-                                    </span>
-                                )}
-                            </div>
+                                </div>
+                            ) : (
+                                <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-400/30 flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                                            <Icon name="file-text" className="w-5 h-5" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-bold text-slate-900 truncate">
+                                                {form.fileName || form.title || 'Berkas Dokumen Terlampir'}
+                                            </p>
+                                            <p className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                                                <Icon name="check-circle" className="w-3 h-3" />
+                                                {form.type} · {form.size} · Berkas siap disimpan ke database
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/40 text-slate-800 text-xs font-semibold transition"
+                                        >
+                                            Ganti
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setForm(f => ({ ...f, file_url: null, fileName: '' }))}
+                                            className="p-1 rounded-lg text-slate-400 hover:text-red-500 transition"
+                                            title="Hapus Lampiran"
+                                        >
+                                            <Icon name="trash-2" className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </FormField>
 
                         <FormField label="Judul Materi" required>

@@ -21,7 +21,7 @@ export const createMaterial = async (req, res) => {
     await pool.query(
       `INSERT INTO materials (id, title, course, type, size, date, semester, lecturer, description, file_url) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE title=VALUES(title), course=VALUES(course), file_url=VALUES(file_url)`,
+       ON DUPLICATE KEY UPDATE title=VALUES(title), course=VALUES(course), type=VALUES(type), size=VALUES(size), date=VALUES(date), semester=VALUES(semester), lecturer=VALUES(lecturer), description=VALUES(description), file_url=VALUES(file_url)`,
       [
         matId,
         title,

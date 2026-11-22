@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Icon from './Icons';
 import Modal, { ConfirmDialog, FormField, inputCls, selectCls } from './Modal';
+import { getFileUrl } from '../lib/api';
+import { uploadDocument } from '../lib/storage';
 
 const TABS = [
     { id: 'materi', label: 'Materi', icon: 'book-open' },
@@ -18,10 +20,10 @@ const getTodayDate = () => {
 
 export default function CourseDetailPage({
     id,
-    courses,
-    materials,
-    assignments,
-    announcements,
+    courses = [],
+    materials = [],
+    assignments = [],
+    announcements = [],
     navigateTo,
     showToast,
     isAdmin,
@@ -35,6 +37,14 @@ export default function CourseDetailPage({
     const [editItem, setEditItem] = useState(null);
     const [confirmDelete, setConfirmDelete] = useState(null); // { type: 'material'|'assignment'|'announcement', id, title }
 
+    // Upload refs & states
+    const materiFileInputRef = useRef(null);
+    const tugasFileInputRef = useRef(null);
+    const [materiUploading, setMateriUploading] = useState(false);
+    const [materiUploadProgress, setMateriUploadProgress] = useState(0);
+    const [tugasUploading, setTugasUploading] = useState(false);
+    const [tugasUploadProgress, setTugasUploadProgress] = useState(0);
+
     // Forms
     const [materiForm, setMateriForm] = useState({
         title: '',
@@ -43,6 +53,8 @@ export default function CourseDetailPage({
         date: getTodayDate(),
         lecturer: '',
         description: '',
+        file_url: null,
+        fileName: '',
     });
 
     const [tugasForm, setTugasForm] = useState({
@@ -51,6 +63,8 @@ export default function CourseDetailPage({
         status: 'Aktif',
         lecturer: '',
         description: '',
+        file_url: null,
+        fileName: '',
     });
 
     const [pengumumanForm, setPengumumanForm] = useState({
@@ -87,6 +101,57 @@ export default function CourseDetailPage({
     const courseTugas = assignments.filter(a => a.course === course.name);
     const coursePengumuman = announcements.filter(a => a.course === course.name);
 
+    // ─── Upload Handler untuk Dokumen Materi ──────────────────────────────────────
+    const handleMateriFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setMateriUploading(true);
+        setMateriUploadProgress(15);
+        try {
+            const res = await uploadDocument(file, (p) => setMateriUploadProgress(p));
+            setMateriForm(f => ({
+                ...f,
+                title: f.title || file.name.replace(/\.[^/.]+$/, ''),
+                type: res.type || f.type,
+                size: res.size || f.size,
+                file_url: res.file_url,
+                fileName: file.name,
+            }));
+            if (showToast) showToast(`Dokumen materi "${file.name}" berhasil diunggah dan siap disimpan!`, 'success');
+        } catch (err) {
+            if (showToast) showToast('Gagal mengunggah berkas materi: ' + err.message, 'error');
+        } finally {
+            setMateriUploading(false);
+            setMateriUploadProgress(0);
+            if (e.target) e.target.value = '';
+        }
+    };
+
+    // ─── Upload Handler untuk Berkas Tugas / Soal ──────────────────────────────────
+    const handleTugasFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setTugasUploading(true);
+        setTugasUploadProgress(15);
+        try {
+            const res = await uploadDocument(file, (p) => setTugasUploadProgress(p));
+            setTugasForm(f => ({
+                ...f,
+                file_url: res.file_url,
+                fileName: file.name,
+            }));
+            if (showToast) showToast(`Berkas panduan soal "${file.name}" berhasil diunggah!`, 'success');
+        } catch (err) {
+            if (showToast) showToast('Gagal mengunggah berkas soal: ' + err.message, 'error');
+        } finally {
+            setTugasUploading(false);
+            setTugasUploadProgress(0);
+            if (e.target) e.target.value = '';
+        }
+    };
+
     // ─── Modal Openers ─────────────────────────────────────────────────────────────
     const openAddMateri = () => {
         setMateriForm({
@@ -96,6 +161,8 @@ export default function CourseDetailPage({
             date: getTodayDate(),
             lecturer: course.lecturer,
             description: '',
+            file_url: null,
+            fileName: '',
         });
         setEditItem(null);
         setModalType('materi-add');
@@ -110,6 +177,8 @@ export default function CourseDetailPage({
             date: item.date || getTodayDate(),
             lecturer: item.lecturer || course.lecturer,
             description: item.description || '',
+            file_url: item.file_url || null,
+            fileName: item.fileName || (item.file_url ? 'Dokumen Materi' : ''),
         });
         setEditItem(item);
         setModalType('materi-edit');
@@ -122,6 +191,8 @@ export default function CourseDetailPage({
             status: 'Aktif',
             lecturer: course.lecturer,
             description: '',
+            file_url: null,
+            fileName: '',
         });
         setEditItem(null);
         setModalType('tugas-add');
@@ -135,6 +206,8 @@ export default function CourseDetailPage({
             status: item.status || 'Aktif',
             lecturer: item.lecturer || course.lecturer,
             description: item.description || '',
+            file_url: item.file_url || null,
+            fileName: item.fileName || (item.file_url ? 'Berkas Panduan Soal' : ''),
         });
         setEditItem(item);
         setModalType('tugas-edit');
@@ -169,7 +242,10 @@ export default function CourseDetailPage({
 
     // ─── Save Handlers ─────────────────────────────────────────────────────────────
     const saveMateri = () => {
-        if (!materiForm.title.trim()) return;
+        if (!materiForm.title.trim()) {
+            if (showToast) showToast('Judul materi wajib diisi', 'error');
+            return;
+        }
         const payload = {
             ...materiForm,
             course: course.name,
@@ -184,7 +260,10 @@ export default function CourseDetailPage({
     };
 
     const saveTugas = () => {
-        if (!tugasForm.title.trim()) return;
+        if (!tugasForm.title.trim()) {
+            if (showToast) showToast('Judul tugas wajib diisi', 'error');
+            return;
+        }
         const payload = {
             ...tugasForm,
             course: course.name,
@@ -198,7 +277,10 @@ export default function CourseDetailPage({
     };
 
     const savePengumuman = () => {
-        if (!pengumumanForm.title.trim()) return;
+        if (!pengumumanForm.title.trim()) {
+            if (showToast) showToast('Judul pengumuman wajib diisi', 'error');
+            return;
+        }
         const payload = {
             ...pengumumanForm,
             course: course.name,
@@ -254,7 +336,7 @@ export default function CourseDetailPage({
                             </span>
                             <h1 className="text-2xl font-extrabold text-slate-900 mt-1">{course.name}</h1>
                             <p className="text-sm text-slate-500 mt-2 flex items-center gap-2">
-                                <Icon name="user" className="w-4 h-4" />
+                                <Icon name="user" className="w-4 h-4 text-slate-400" />
                                 {course.lecturer}
                             </p>
                         </div>
@@ -363,6 +445,22 @@ export default function CourseDetailPage({
                                         <span className="hidden sm:block text-xs text-slate-400">{mat.size}</span>
                                         <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600">{mat.type}</span>
 
+                                        {/* Tombol Unduh Cepat jika memiliki file_url */}
+                                        {mat.file_url && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    window.open(getFileUrl(mat.file_url), '_blank');
+                                                }}
+                                                className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-400/30 text-[11px] font-bold transition flex items-center gap-1"
+                                                title="Unduh / Buka Dokumen Materi"
+                                            >
+                                                <Icon name="download" className="w-3 h-3 text-emerald-400" />
+                                                <span className="hidden sm:inline">Unduh</span>
+                                            </button>
+                                        )}
+
                                         {/* Admin Controls */}
                                         {isAdmin && (
                                             <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
@@ -421,6 +519,23 @@ export default function CourseDetailPage({
                                                     </span>
                                                 </div>
                                                 <p className="text-xs text-slate-600 mt-1 leading-relaxed">{task.description}</p>
+                                                
+                                                {/* Lampiran Panduan Soal Tugas */}
+                                                {task.file_url && (
+                                                    <div className="mt-2.5">
+                                                        <a
+                                                            href={getFileUrl(task.file_url)}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            download
+                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-400/30 text-[11px] font-semibold transition"
+                                                            title="Unduh Panduan Soal"
+                                                        >
+                                                            <Icon name="download" className="w-3 h-3" /> Unduh Panduan / Soal
+                                                        </a>
+                                                    </div>
+                                                )}
+
                                                 <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-2.5">
                                                     <span className="flex items-center gap-1">
                                                         <Icon name="user" className="w-3 h-3" /> {task.lecturer}
@@ -440,14 +555,14 @@ export default function CourseDetailPage({
                                                     className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition"
                                                     title="Edit Tugas"
                                                 >
-                                                    <Icon name="pencil" className="w-4 h-4" />
+                                                    <Icon name="pencil" className="w-3.5 h-3.5" />
                                                 </button>
                                                 <button
                                                     onClick={() => setConfirmDelete({ type: 'assignment', id: task.id, title: task.title })}
                                                     className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
                                                     title="Hapus Tugas"
                                                 >
-                                                    <Icon name="trash-2" className="w-4 h-4" />
+                                                    <Icon name="trash-2" className="w-3.5 h-3.5" />
                                                 </button>
                                             </div>
                                         )}
@@ -522,13 +637,97 @@ export default function CourseDetailPage({
                 )}
             </div>
 
-            {/* ── Modal: Form Materi ── */}
+            {/* ── Modal: Form Materi (Dengan Unggah Dokumen Nyata Langsung ke Database) ── */}
             {(modalType === 'materi-add' || modalType === 'materi-edit') && (
                 <Modal
                     title={modalType === 'materi-add' ? `Tambah Materi (${course.name})` : `Edit Materi (${course.name})`}
                     onClose={() => setModalType(null)}
                 >
                     <div className="space-y-4">
+                        <input
+                            type="file"
+                            ref={materiFileInputRef}
+                            onChange={handleMateriFileUpload}
+                            className="hidden"
+                            accept=".pdf,.pptx,.ppt,.docx,.doc,.xlsx,.xls,.zip,.rar,.mp4"
+                        />
+
+                        {/* Area Unggah Dokumen Materi dari Laptop / HP */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-700 block">
+                                Unggah Dokumen Materi (Laptop / HP)
+                            </label>
+
+                            {!materiForm.file_url ? (
+                                <div
+                                    onClick={() => !materiUploading && materiFileInputRef.current?.click()}
+                                    className="border-2 border-dashed border-slate-300 hover:border-slate-400 rounded-2xl p-5 text-center cursor-pointer transition bg-slate-50/50 hover:bg-slate-50 group"
+                                >
+                                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-2 group-hover:scale-105 transition">
+                                        <Icon name="file-text" className="w-5 h-5" />
+                                    </div>
+                                    <p className="text-xs font-bold text-slate-800">
+                                        {materiUploading ? 'Mengunggah ke database...' : 'Klik untuk Pilih Dokumen Materi dari Komputer / HP'}
+                                    </p>
+                                    <p className="text-[11px] text-slate-400 mt-0.5">
+                                        Mendukung PDF, Word, PowerPoint, Excel, ZIP, atau MP4 (Langsung tersimpan ke database)
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-400/30 text-xs">
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <Icon name="check-circle" className="w-4 h-4 text-emerald-600 shrink-0" />
+                                        <div className="truncate">
+                                            <p className="font-bold text-emerald-800 dark:text-emerald-300 truncate">
+                                                {materiForm.fileName || 'Berkas Dokumen Terunggah'}
+                                            </p>
+                                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                                                {materiForm.size} · Format {materiForm.type} · Siap disimpan ke database
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => window.open(getFileUrl(materiForm.file_url), '_blank')}
+                                            className="text-[11px] font-bold text-blue-600 hover:underline"
+                                        >
+                                            Lihat
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => materiFileInputRef.current?.click()}
+                                            className="text-slate-500 hover:text-slate-800 text-xs font-semibold"
+                                        >
+                                            Ganti
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setMateriForm(f => ({ ...f, file_url: null, fileName: '' }))}
+                                            className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                        >
+                                            Hapus
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {materiUploading && (
+                                <div className="space-y-1">
+                                    <div className="flex justify-between text-[11px] text-slate-500 font-semibold">
+                                        <span>Mengunggah dokumen ke database...</span>
+                                        <span>{materiUploadProgress}%</span>
+                                    </div>
+                                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                        <div
+                                            className="bg-blue-600 h-1.5 transition-all duration-300"
+                                            style={{ width: `${materiUploadProgress}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <FormField label="Judul Materi" required>
                             <input
                                 className={inputCls}
@@ -587,29 +786,40 @@ export default function CourseDetailPage({
 
                         <div className="flex gap-3 pt-2">
                             <button
+                                type="button"
                                 onClick={() => setModalType(null)}
                                 className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
                             >
                                 Batal
                             </button>
                             <button
+                                type="button"
                                 onClick={saveMateri}
-                                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium transition"
+                                disabled={materiUploading}
+                                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-sm font-medium transition"
                             >
-                                {modalType === 'materi-add' ? 'Simpan Materi' : 'Perbarui Materi'}
+                                {modalType === 'materi-add' ? 'Simpan Materi ke Database' : 'Perbarui Materi'}
                             </button>
                         </div>
                     </div>
                 </Modal>
             )}
 
-            {/* ── Modal: Form Tugas ── */}
+            {/* ── Modal: Form Tugas (Dengan Unggah Berkas Panduan Soal) ── */}
             {(modalType === 'tugas-add' || modalType === 'tugas-edit') && (
                 <Modal
                     title={modalType === 'tugas-add' ? `Tambah Tugas (${course.name})` : `Edit Tugas (${course.name})`}
                     onClose={() => setModalType(null)}
                 >
                     <div className="space-y-4">
+                        <input
+                            type="file"
+                            ref={tugasFileInputRef}
+                            onChange={handleTugasFileUpload}
+                            className="hidden"
+                            accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar"
+                        />
+
                         <FormField label="Judul Tugas" required>
                             <input
                                 className={inputCls}
@@ -659,18 +869,68 @@ export default function CourseDetailPage({
                             />
                         </FormField>
 
+                        {/* Unggah Berkas Panduan / Soal Tugas */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-700 block">
+                                Berkas Panduan / Soal Tugas (Opsional)
+                            </label>
+
+                            <div
+                                onClick={() => !tugasUploading && tugasFileInputRef.current?.click()}
+                                className="border border-dashed border-slate-300 hover:border-slate-400 rounded-xl p-3 text-center cursor-pointer bg-slate-50 hover:bg-slate-100/80 transition flex items-center justify-center gap-2"
+                            >
+                                <Icon name="upload" className="w-4 h-4 text-slate-500" />
+                                <span className="text-xs font-semibold text-slate-700">
+                                    {tugasUploading ? 'Mengunggah...' : 'Pilih Berkas Soal / Silabus dari Laptop (PDF, DOCX, ZIP)'}
+                                </span>
+                            </div>
+
+                            {tugasUploading && (
+                                <div className="space-y-1">
+                                    <div className="flex justify-between text-[10px] text-slate-500 font-semibold">
+                                        <span>Mengunggah dokumen...</span>
+                                        <span>{tugasUploadProgress}%</span>
+                                    </div>
+                                    <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                                        <div className="bg-blue-600 h-1" style={{ width: `${tugasUploadProgress}%` }} />
+                                    </div>
+                                </div>
+                            )}
+
+                            {tugasForm.file_url && !tugasUploading && (
+                                <div className="flex items-center justify-between p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-xs">
+                                    <div className="flex items-center gap-2 truncate">
+                                        <Icon name="file-text" className="w-4 h-4 text-blue-600 shrink-0" />
+                                        <span className="font-bold text-blue-900 truncate">
+                                            {tugasForm.fileName || 'Berkas Lampiran Soal Siap Disimpan'}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setTugasForm(f => ({ ...f, file_url: null, fileName: '' }))}
+                                        className="text-red-500 hover:text-red-700 font-semibold text-xs ml-2 shrink-0"
+                                    >
+                                        Hapus
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="flex gap-3 pt-2">
                             <button
+                                type="button"
                                 onClick={() => setModalType(null)}
                                 className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
                             >
                                 Batal
                             </button>
                             <button
+                                type="button"
                                 onClick={saveTugas}
-                                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium transition"
+                                disabled={tugasUploading}
+                                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-sm font-medium transition"
                             >
-                                {modalType === 'tugas-add' ? 'Simpan Tugas' : 'Perbarui Tugas'}
+                                {modalType === 'tugas-add' ? 'Simpan Tugas ke Database' : 'Perbarui Tugas'}
                             </button>
                         </div>
                     </div>
@@ -747,12 +1007,14 @@ export default function CourseDetailPage({
 
                         <div className="flex gap-3 pt-2">
                             <button
+                                type="button"
                                 onClick={() => setModalType(null)}
                                 className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
                             >
                                 Batal
                             </button>
                             <button
+                                type="button"
                                 onClick={savePengumuman}
                                 className="flex-1 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium transition"
                             >

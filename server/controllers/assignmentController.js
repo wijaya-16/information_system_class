@@ -20,7 +20,7 @@ export const createAssignment = async (req, res) => {
     await pool.query(
       `INSERT INTO assignments (id, title, course, deadline, description, lecturer, status, file_url) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE title=VALUES(title), course=VALUES(course), deadline=VALUES(deadline), description=VALUES(description), lecturer=VALUES(lecturer), status=VALUES(status)`,
+       ON DUPLICATE KEY UPDATE title=VALUES(title), course=VALUES(course), deadline=VALUES(deadline), description=VALUES(description), lecturer=VALUES(lecturer), status=VALUES(status), file_url=VALUES(file_url)`,
       [
         assignId,
         title,
@@ -41,6 +41,7 @@ export const createAssignment = async (req, res) => {
       description,
       lecturer,
       status: status || "Aktif",
+      file_url: file_url || null,
     });
   } catch (error) {
     res.status(500).json({ message: "Gagal menambahkan tugas", error: error.message });

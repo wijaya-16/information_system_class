@@ -19,7 +19,8 @@ export const getSubmissions = async (req, res) => {
       nim: r.nim,
       studentName: r.student_name,
       note: r.note || "",
-      link: r.link || r.file_url || "",
+      link: r.link || "",
+      file_url: r.file_url || r.link || "",
       submittedAt: r.submitted_at ? (typeof r.submitted_at === 'string' ? r.submitted_at : r.submitted_at.toISOString().split("T")[0]) : "",
     }));
     res.json(submissions);

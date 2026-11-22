@@ -18,8 +18,15 @@ import pool from "./config/db.js";
 // Pastikan tipe kolom url di galeri dan photo di members dapat menampung data gambar & video
 (async () => {
   try {
+    try { await pool.query("ALTER TABLE assignments ADD COLUMN file_url LONGTEXT NULL"); } catch {}
+    try { await pool.query("ALTER TABLE submissions ADD COLUMN file_url LONGTEXT NULL"); } catch {}
+    try { await pool.query("ALTER TABLE materials ADD COLUMN file_url LONGTEXT NULL"); } catch {}
     await pool.query("ALTER TABLE class_photos MODIFY COLUMN url LONGTEXT NOT NULL");
     await pool.query("ALTER TABLE members_list MODIFY COLUMN photo LONGTEXT NULL");
+    await pool.query("ALTER TABLE materials MODIFY COLUMN file_url LONGTEXT NULL");
+    await pool.query("ALTER TABLE assignments MODIFY COLUMN file_url LONGTEXT NULL");
+    await pool.query("ALTER TABLE submissions MODIFY COLUMN file_url LONGTEXT NULL");
+    await pool.query("ALTER TABLE submissions MODIFY COLUMN link LONGTEXT NULL");
     try {
       await pool.query("ALTER TABLE class_photos ADD COLUMN type VARCHAR(20) DEFAULT 'image'");
     } catch {
@@ -61,13 +68,20 @@ app.use("/api/photos", photoRoutes);
 app.use("/api/members", memberRoutes);
 app.use("/api/submissions", submissionRoutes);
 
-// Endpoint umum untuk upload berkas tunggal (Mandiri)
+// Endpoint umum untuk upload berkas tunggal (Dokumen, Gambar, Video, Tugas)
 app.post("/api/upload", upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: "Tidak ada file yang diunggah" });
   }
   const file_url = `/uploads/${req.file.filename}`;
-  res.json({ file_url });
+  res.json({
+    file_url,
+    url: file_url,
+    filename: req.file.filename,
+    originalname: req.file.originalname,
+    size: req.file.size,
+    mimetype: req.file.mimetype,
+  });
 });
 
 const PORT = process.env.PORT || 5000;

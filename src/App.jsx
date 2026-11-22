@@ -1145,6 +1145,8 @@ function AppContent() {
             navigateTo={navigateTo}
             adminHandlers={adminHandlers}
             showToast={showToast}
+            data={data}
+            dbConnected={dbConnected}
           />
         )}
 
